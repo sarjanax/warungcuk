@@ -1114,51 +1114,15 @@ function getAdsSlots(cfg) {
   const ck = cfg.ADS_ADSENSE_CLIENT+':'+cfg.WARUNG_DOMAIN;
   if (_adsSlotsCache.has(ck)) return _adsSlotsCache.get(ck);
   const slots = {
-    header_top:   { enabled:true, type:'html', code_desktop:`<!-- JuicyAds v3.0 -->
-<script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-<ins id="1112180" data-width="728" data-height="102"></ins>
-<script type="text/javascript" data-cfasync="false" async>(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1112180});</script>
-<!--JuicyAds END-->`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5824016"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'0 0 4px' },
-    before_grid:  { enabled:true, type:'html', code_desktop:`<!-- JuicyAds v3.0 -->
-<script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-<ins id="1022862" data-width="300" data-height="112"></ins>
-<script type="text/javascript" data-cfasync="false" async>(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1022862});</script>
-<!--JuicyAds END-->`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5824016"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:'Sponsored', align:'center', margin:'8px 0 16px' },
-    mid_grid:     { enabled:true, type:'html', code_desktop:`<!-- JuicyAds v3.0 -->
-<script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-<ins id="1022993" data-width="300" data-height="112"></ins>
-<script type="text/javascript" data-cfasync="false" async>(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1022993});</script>
-<!--JuicyAds END-->`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5824016"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:'Iklan', align:'center', margin:'4px 0', insert_after:6 },
-    after_grid:   { enabled:true, type:'html', code_desktop:`<!-- JuicyAds v3.0 -->
-<script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-<ins id="1108465" data-width="300" data-height="112"></ins>
-<script type="text/javascript" data-cfasync="false" async>(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1108465});</script>
-<!--JuicyAds END-->`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5845680"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'16px 0 8px' },
-    sidebar_top:  { enabled:true, type:'html', code_desktop:`<!-- JuicyAds v3.0 -->
-<script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-<ins id="1108465" data-width="300" data-height="112"></ins>
-<script type="text/javascript" data-cfasync="false" async>(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1108467});</script>
-<!--JuicyAds END-->`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5846568"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'0 0 16px' },
-    sidebar_mid:  { enabled:true, type:'html', code_desktop:`<!-- JuicyAds v3.0 -->
-<script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-<ins id="1001160" data-width="728" data-height="90"></ins>
-<script type="text/javascript" data-cfasync="false" async>(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':991054});</script>
-<!--JuicyAds END-->`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5846568"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'0 0 16px' },
-    sidebar_bottom:{ enabled:true, type:'html', code_desktop:`<!-- JuicyAds v3.0 -->
-<script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-<ins id="1001160" data-width="728" data-height="90"></ins>
-<script type="text/javascript" data-cfasync="false" async>(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':992385});</script>
-<!--JuicyAds END-->`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5846568"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'0' },
-    after_content:{ enabled:true, type:'html', code_desktop:`<!-- JuicyAds v3.0 -->
-<script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-<ins id="992296" data-width="728" data-height="90"></ins>
-<script type="text/javascript" data-cfasync="false" async>(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1001162});</script>
-<!--JuicyAds END-->`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5845680"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'24px 0' },
-    footer_top:   { enabled:true, type:'html', code_desktop:`<!-- JuicyAds v3.0 -->
-<script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-<ins id="1112179" data-width="728" data-height="102"></ins>
-<script type="text/javascript" data-cfasync="false" async>(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1112179});</script>
-<!--JuicyAds END-->`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5845680"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'0' },
+    header_top:   { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5823946"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5824016"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'0 0 4px' },
+    before_grid:  { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5823946"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5824016"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:'Sponsored', align:'center', margin:'8px 0 16px' },
+    mid_grid:     { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5823946"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5824016"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:'Iklan', align:'center', margin:'4px 0', insert_after:6 },
+    after_grid:   { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5846572"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5845680"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'16px 0 8px' },
+    sidebar_top:  { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5824012"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5846568"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'0 0 16px' },
+    sidebar_mid:  { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5824012"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5846568"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'0 0 16px' },
+    sidebar_bottom:{ enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5824012"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5846568"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'0' },
+    after_content:{ enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5846572"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5845680"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'24px 0' },
+    footer_top:   { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5846572"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5845680"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'0' },
   };
   _adsSlotsCache.set(ck, slots);
   return slots;
