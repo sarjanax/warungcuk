@@ -1,7 +1,7 @@
 /**
  * functions/[[path]].js — Warung • Cloudflare Pages Functions
  * ═══════════════════════════════════════════════════════════════
- * VERSION: v28.0 — "NO-KV: pure in-memory caching, zero KV dependency"
+ * VERSION: v29.0 — "DARK GOLD THEME: env-controlled design tokens"
  * AUTHOR:  dukunseo.com
  * 
  *  - Routing LENGKAP: home, view, album, search, tag, category, static pages, sitemap, RSS
@@ -10,7 +10,41 @@
  *  - Anti-bot: Digital DNA (bot only), Ghost Body, CSS Stego, Blackhole Trap, Sacrificial Lamb
  *  - Security: nonce CSP, HMAC, rate limiting adaptive
  *  - Performance: LRU cache, QuantumCache dengan TTL, brotli via CF, srcset responsive
- *  - Theme: unique per domain, font & color generator
+ *  - Theme: DARK GOLD — semua token warna & tampilan bisa dikontrol via env dashboard
+ * 
+ * ── THEME ENV VARIABLES (Cloudflare Dashboard → Settings → Variables) ──────────
+ *  THEME_ACCENT          Warna accent/gold     default: #ffaa00
+ *  THEME_ACCENT2         Warna accent hover    default: #ffc233
+ *  THEME_BG              Background utama      default: #0a0a0a
+ *  THEME_BG2             Background card/panel default: #121212
+ *  THEME_BG3             Background hover      default: #1a1a1a
+ *  THEME_FG              Warna teks utama      default: #ffffff
+ *  THEME_FG_DIM          Warna teks redup      default: #888888
+ *  THEME_BORDER          Warna border          default: #252525
+ *  THEME_FONT            Google Font name      default: (system font)
+ *  THEME_NAV_STYLE       'dark' atau 'gold'    default: dark
+ *  THEME_BADGE_HOT       Label badge HOT       default: 🔥 HOT
+ *  THEME_PROMO_TEXT      Teks promo banner     default: ✨ PREMIUM • 4K UHD • TANPA ADS
+ *  THEME_SHOW_PROMO      'true'/'false'        default: true
+ *  THEME_SHOW_TRENDING   'true'/'false'        default: true
+ *  THEME_GRID_COLS_MOBILE Kolom grid mobile 1/2 default: 2
+ *  THEME_CARD_RATIO      Aspect ratio card     default: 16/9 (bisa: 2/3, 1/1)
+ * ─────────────────────────────────────────────────────────────────────────────────
+ *
+ * ── IMMORTAL ENV VARIABLES ───────────────────────────────────────────────────────
+ *  IMMORTAL_DIGITAL_DNA      'true'/'false'   default: true
+ *  IMMORTAL_CSS_STEGO        'true'/'false'   default: true
+ *  IMMORTAL_GHOST_BODY       'true'/'false'   default: true
+ *  IMMORTAL_BLACKHOLE        'true'/'false'   default: true
+ *  IMMORTAL_SACRIFICIAL_LAMB 'true'/'false'   default: true
+ *  IMMORTAL_BLACKHOLE_MAX    Integer          default: 50
+ *  IMMORTAL_SACRIFICE_ENERGY Integer          default: 1000
+ *  IMMORTAL_RATE_WINDOW      Detik            default: 60
+ *  IMMORTAL_RATE_MAX         Integer          default: 120
+ *  IMMORTAL_SCRAPER_RATE_MAX Integer          default: 10
+ *  IMMORTAL_CSS_OPACITY      Float            default: 0.001
+ *  IMMORTAL_DNA_POOL         Kata CSV kustom  default: (pool bawaan)
+ * ─────────────────────────────────────────────────────────────────────────────────
  */
 
 'use strict';
@@ -95,6 +129,14 @@ function logError(context, error, request = null, ctx = null) {
 // ── LRU Cache ────────────────────────────────────────────────────────────────
 class LRUMap extends Map {
   constructor(maxSize = 100) { super(); this.maxSize = maxSize; }
+  get(key) {
+    // FIX Bug #10: pindah ke posisi akhir (most recently used) saat get()
+    if (!super.has(key)) return undefined;
+    const val = super.get(key);
+    super.delete(key);
+    super.set(key, val);
+    return val;
+  }
   set(key, value) {
     // Jika key sudah ada, hapus dulu agar pindah ke posisi akhir (most recent)
     if (this.has(key)) this.delete(key);
@@ -121,7 +163,11 @@ class QCache {
     this.data.set(key, value); this.ts.set(key, Date.now());
     return value;
   }
-  has(key) { return this.get(key) !== null; }
+  has(key) {
+    if (!this.data.has(key)) return false;
+    if (Date.now() - this.ts.get(key) > this.ttl) { this._del(key); return false; }
+    return true;
+  }
   _del(key) { this.data.delete(key); this.ts.delete(key); }
 }
 
@@ -133,7 +179,7 @@ let _scheduledPingLastTs = 0;
 const _dapurConfigMemCache = new LRUMap(10); // domain -> { data, ts }, max 10 domain
 // Fix: isBlacklisted — hasil cache in-memory lebih agresif (TTL 5 menit)
 const _blCacheTTL = 300000; // 5 menit
-const _blCacheTs  = new Map(); // ip -> timestamp
+const _blCacheTs  = new LRUMap(500); // FIX Bug #7: LRUMap agar bounded, selaras dengan _blCache
 
 // ── Cache instances ──────────────────────────────────────────────────────────
 const _hmacCache    = new LRUMap(20);
@@ -146,6 +192,40 @@ const _headersCache = new LRUMap(50);
 const _dnaCache     = new QCache(500, 60000);
 const _blackholeMap = new LRUMap(5000);
 const _sacrificeMap = new LRUMap(50);
+const _immortalEnvCache = new LRUMap(5);
+
+// ── Immortal env loader — kontrol semua flag via Cloudflare Dashboard env vars ──
+// Dipanggil sekali di awal onRequest, cache by env-signature agar tidak compute ulang
+function applyImmortalEnv(env) {
+  const sig = [
+    env.IMMORTAL_DIGITAL_DNA, env.IMMORTAL_CSS_STEGO, env.IMMORTAL_GHOST_BODY,
+    env.IMMORTAL_BLACKHOLE, env.IMMORTAL_SACRIFICIAL_LAMB,
+    env.IMMORTAL_BLACKHOLE_MAX, env.IMMORTAL_SACRIFICE_ENERGY,
+    env.IMMORTAL_RATE_WINDOW, env.IMMORTAL_RATE_MAX, env.IMMORTAL_SCRAPER_RATE_MAX,
+    env.IMMORTAL_CSS_OPACITY, env.IMMORTAL_DNA_POOL,
+  ].join('|');
+  if (_immortalEnvCache.has(sig)) return;
+  _immortalEnvCache.set(sig, true);
+  const bool = (k, d) => env[k] !== undefined ? env[k] === 'true' : d;
+  // FIX: gunakan Math.max(0,...) agar nilai negatif tidak diterima
+  const int  = (k, d) => { if (env[k] === undefined) return d; const v = parseInt(env[k], 10); return (isNaN(v)||v<0) ? d : v; };
+  const flt  = (k, d) => { if (env[k] === undefined) return d; const v = parseFloat(env[k]); return (isNaN(v)||v<0) ? d : v; };
+  IMMORTAL.ENABLE_DIGITAL_DNA      = bool('IMMORTAL_DIGITAL_DNA',      IMMORTAL.ENABLE_DIGITAL_DNA);
+  IMMORTAL.ENABLE_CSS_STEGO        = bool('IMMORTAL_CSS_STEGO',        IMMORTAL.ENABLE_CSS_STEGO);
+  IMMORTAL.ENABLE_GHOST_BODY       = bool('IMMORTAL_GHOST_BODY',       IMMORTAL.ENABLE_GHOST_BODY);
+  IMMORTAL.ENABLE_BLACKHOLE        = bool('IMMORTAL_BLACKHOLE',        IMMORTAL.ENABLE_BLACKHOLE);
+  IMMORTAL.ENABLE_SACRIFICIAL_LAMB = bool('IMMORTAL_SACRIFICIAL_LAMB', IMMORTAL.ENABLE_SACRIFICIAL_LAMB);
+  IMMORTAL.BLACKHOLE_MAX_REQUESTS  = int ('IMMORTAL_BLACKHOLE_MAX',    IMMORTAL.BLACKHOLE_MAX_REQUESTS);
+  IMMORTAL.SACRIFICE_ENERGY_MAX    = int ('IMMORTAL_SACRIFICE_ENERGY', IMMORTAL.SACRIFICE_ENERGY_MAX);
+  IMMORTAL.RATE_LIMIT_WINDOW       = int ('IMMORTAL_RATE_WINDOW',      IMMORTAL.RATE_LIMIT_WINDOW);
+  IMMORTAL.RATE_LIMIT_MAX          = int ('IMMORTAL_RATE_MAX',         IMMORTAL.RATE_LIMIT_MAX);
+  IMMORTAL.SCRAPER_RATE_MAX        = int ('IMMORTAL_SCRAPER_RATE_MAX', IMMORTAL.SCRAPER_RATE_MAX);
+  IMMORTAL.CSS_OPACITY             = flt ('IMMORTAL_CSS_OPACITY',      IMMORTAL.CSS_OPACITY);
+  if (env.IMMORTAL_DNA_POOL) {
+    const pool = env.IMMORTAL_DNA_POOL.split(',').map(k=>k.trim()).filter(k=>k.length>1);
+    if (pool.length >= 5) IMMORTAL.DNA_POOL = pool;
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════
 // SECTION 1 — CONFIG
@@ -168,13 +248,18 @@ function detectDomainInfo(env, request) {
 
 // Per-domain cache — mencegah cross-domain pollution di multi-domain Cloudflare isolate
 const _cfgCacheMap = new LRUMap(10); // max 10 domain per isolate
+// FIX: safeParseInt — hindari NaN jika env mengandung string non-numeric atau kosong
+function safeParseInt(val, defaultValue) {
+  const parsed = parseInt(val, 10);
+  return isNaN(parsed) ? defaultValue : Math.max(0, parsed);
+}
 function getConfig(env, request) {
   const { domain, name } = detectDomainInfo(env, request);
   // FIX: Jangan cache jika domain masih pages.dev (WARUNG_DOMAIN belum di-set via env)
   // atau jika env belum punya WARUNG_DOMAIN (multi-site: tiap request bisa beda domain)
   // FIX v27.7: Sertakan nilai env penting dalam cache key — kalau PATH_CONTENT/dll diubah,
   // cache otomatis invalid tanpa perlu restart isolate
-  const envSig = (env.PATH_CONTENT||'')+(env.PATH_ALBUM||'')+(env.PATH_SEARCH||'')+(env.PATH_CATEGORY||'')+(env.PATH_TAG||'')+(env.WARUNG_TYPE||'')+(env.WARUNG_NAME||'');
+  const envSig = (env.PATH_CONTENT||'')+(env.PATH_ALBUM||'')+(env.PATH_SEARCH||'')+(env.PATH_CATEGORY||'')+(env.PATH_TAG||'')+(env.WARUNG_TYPE||'')+(env.WARUNG_NAME||'')+(env.ITEMS_PER_PAGE||'')+(env.RELATED_COUNT||'')+(env.TRENDING_COUNT||'');
   const cacheKey = domain + ':' + envSig;
   const shouldCache = !!env.WARUNG_DOMAIN && !domain.endsWith('.pages.dev') && !domain.endsWith('.workers.dev');
   if (shouldCache && _cfgCacheMap.has(cacheKey)) return _cfgCacheMap.get(cacheKey);
@@ -210,49 +295,53 @@ function getConfig(env, request) {
     PATH_FAQ:      env.PATH_FAQ      || 'faq',
     PATH_CONTACT:  env.PATH_CONTACT  || 'contact',
     PATH_ABOUT:    env.PATH_ABOUT    || 'about',
-    ITEMS_PER_PAGE: parseInt(env.ITEMS_PER_PAGE || '24'),
-    RELATED_COUNT:  parseInt(env.RELATED_COUNT  || '8'),
-    TRENDING_COUNT: parseInt(env.TRENDING_COUNT || '10'),
+    ITEMS_PER_PAGE: safeParseInt(env.ITEMS_PER_PAGE, 24),
+    RELATED_COUNT:  safeParseInt(env.RELATED_COUNT,  8),
+    TRENDING_COUNT: safeParseInt(env.TRENDING_COUNT, 10),
     DEFAULT_THUMB:  baseUrl + '/assets/no-thumb.jpg',
     ADS_ENABLED:          (env.ADS_ENABLED || 'true') === 'true',
     ADS_ADSENSE_CLIENT:    env.ADS_ADSENSE_CLIENT || '',
     ADS_LABEL:             env.ADS_LABEL || '',
-
-    // ── Slot Iklan per-posisi (edit via Cloudflare Dashboard → Settings → Variables) ──
-    // Desktop code
-    ADS_HEADER_TOP_DESKTOP:     env.ADS_HEADER_TOP_DESKTOP     || '',
-    ADS_BEFORE_GRID_DESKTOP:    env.ADS_BEFORE_GRID_DESKTOP    || '',
-    ADS_MID_GRID_DESKTOP:       env.ADS_MID_GRID_DESKTOP       || '',
-    ADS_AFTER_GRID_DESKTOP:     env.ADS_AFTER_GRID_DESKTOP     || '',
-    ADS_SIDEBAR_TOP_DESKTOP:    env.ADS_SIDEBAR_TOP_DESKTOP    || '',
-    ADS_SIDEBAR_MID_DESKTOP:    env.ADS_SIDEBAR_MID_DESKTOP    || '',
-    ADS_SIDEBAR_BOTTOM_DESKTOP: env.ADS_SIDEBAR_BOTTOM_DESKTOP || '',
-    ADS_AFTER_CONTENT_DESKTOP:  env.ADS_AFTER_CONTENT_DESKTOP  || '',
-    ADS_FOOTER_TOP_DESKTOP:     env.ADS_FOOTER_TOP_DESKTOP     || '',
-    // Mobile code
-    ADS_HEADER_TOP_MOBILE:      env.ADS_HEADER_TOP_MOBILE      || '',
-    ADS_BEFORE_GRID_MOBILE:     env.ADS_BEFORE_GRID_MOBILE     || '',
-    ADS_MID_GRID_MOBILE:        env.ADS_MID_GRID_MOBILE        || '',
-    ADS_AFTER_GRID_MOBILE:      env.ADS_AFTER_GRID_MOBILE      || '',
-    ADS_SIDEBAR_TOP_MOBILE:     env.ADS_SIDEBAR_TOP_MOBILE     || '',
-    ADS_SIDEBAR_MID_MOBILE:     env.ADS_SIDEBAR_MID_MOBILE     || '',
-    ADS_SIDEBAR_BOTTOM_MOBILE:  env.ADS_SIDEBAR_BOTTOM_MOBILE  || '',
-    ADS_AFTER_CONTENT_MOBILE:   env.ADS_AFTER_CONTENT_MOBILE   || '',
-    ADS_FOOTER_TOP_MOBILE:      env.ADS_FOOTER_TOP_MOBILE      || '',
-    // Enable/disable per slot
-    ADS_HEADER_TOP_ENABLED:      (env.ADS_HEADER_TOP_ENABLED      ?? 'true') !== 'false',
-    ADS_BEFORE_GRID_ENABLED:     (env.ADS_BEFORE_GRID_ENABLED     ?? 'true') !== 'false',
-    ADS_MID_GRID_ENABLED:        (env.ADS_MID_GRID_ENABLED        ?? 'true') !== 'false',
-    ADS_AFTER_GRID_ENABLED:      (env.ADS_AFTER_GRID_ENABLED      ?? 'true') !== 'false',
-    ADS_SIDEBAR_TOP_ENABLED:     (env.ADS_SIDEBAR_TOP_ENABLED     ?? 'true') !== 'false',
-    ADS_SIDEBAR_MID_ENABLED:     (env.ADS_SIDEBAR_MID_ENABLED     ?? 'true') !== 'false',
-    ADS_SIDEBAR_BOTTOM_ENABLED:  (env.ADS_SIDEBAR_BOTTOM_ENABLED  ?? 'true') !== 'false',
-    ADS_AFTER_CONTENT_ENABLED:   (env.ADS_AFTER_CONTENT_ENABLED   ?? 'true') !== 'false',
-    ADS_FOOTER_TOP_ENABLED:      (env.ADS_FOOTER_TOP_ENABLED      ?? 'true') !== 'false',
-    // Mid grid: posisi insert (default: setelah item ke-6)
-    ADS_MID_GRID_INSERT_AFTER:   parseInt(env.ADS_MID_GRID_INSERT_AFTER || '6'),
     CONTACT_EMAIL:         env.CONTACT_EMAIL      || ('admin@' + domain),
     CONTACT_EMAIL_NAME:    env.CONTACT_EMAIL_NAME || (name + ' Admin'),
+
+    // ── THEME VARIABLES (kontrol via dashboard env) ──────────────────────
+    // Warna utama / accent (default: gold #ffaa00)
+    THEME_ACCENT:          env.THEME_ACCENT        || '#ffaa00',
+    // Warna accent hover/secondary (default: #ffc233)
+    THEME_ACCENT2:         env.THEME_ACCENT2       || '#ffc233',
+    // Background utama
+    THEME_BG:              env.THEME_BG            || '#0a0a0a',
+    // Background card/panel
+    THEME_BG2:             env.THEME_BG2           || '#121212',
+    // Background 3 (hover, strip)
+    THEME_BG3:             env.THEME_BG3           || '#1a1a1a',
+    // Warna teks utama
+    THEME_FG:              env.THEME_FG            || '#ffffff',
+    // Warna teks redup
+    THEME_FG_DIM:          env.THEME_FG_DIM        || '#888888',
+    // Border warna
+    THEME_BORDER:          env.THEME_BORDER        || '#252525',
+    // Font utama (Google Fonts name atau system font)
+    THEME_FONT:            env.THEME_FONT          || 'Inter',
+    // Font display/judul
+    THEME_FONT_DISPLAY:    env.THEME_FONT_DISPLAY  || 'Inter',
+    // Badge label HOT (teks) — bisa diganti e.g. "NEW", "🔥"
+    THEME_BADGE_HOT:       env.THEME_BADGE_HOT     || '🔥 HOT',
+    // Teks promo banner tengah
+    THEME_PROMO_TEXT:      env.THEME_PROMO_TEXT    || '✨ PREMIUM • 4K UHD • TANPA ADS',
+    // Tampilkan promo banner: 'true'/'false'
+    THEME_SHOW_PROMO:      (env.THEME_SHOW_PROMO || 'true') === 'true',
+    // Tampilkan trending strip di homepage: 'true'/'false'
+    THEME_SHOW_TRENDING:   (env.THEME_SHOW_TRENDING || 'true') === 'true',
+    // Jumlah kolom card grid mobile (1 atau 2)
+    THEME_GRID_COLS_MOBILE: parseInt(env.THEME_GRID_COLS_MOBILE || '2'),
+    // Aspect ratio card thumbnail: '16/9' atau '2/3' atau '1/1'
+    THEME_CARD_RATIO:      env.THEME_CARD_RATIO    || '16/9',
+    // Navbar style: 'dark' (hitam) atau 'gold' (accent navbar)
+    THEME_NAV_STYLE:       env.THEME_NAV_STYLE     || 'dark',
+    // ── END THEME VARIABLES ──────────────────────────────────────────────
+
     _dapurConfig: null,
     _env: env,
   };
@@ -452,10 +541,17 @@ function isScraperBot(ua){ return _SCRAPER_BOTS.some(b=>ua.includes(b)); }
 
 // OPTIMASI: Pure in-memory blacklist — ZERO KV dependency
 // IP di-block saat isolate ini hidup; reset saat isolate recycle (fine untuk sebagian besar kasus)
+// FIX: hapus entry expired dari _blCache & _blCacheTs agar tidak ada stale data
 async function isBlacklisted(ip, env) {
   const now = Date.now();
-  if (_blCache.has(ip) && (now - (_blCacheTs.get(ip)||0)) < _blCacheTTL) {
-    return _blCache.get(ip);
+  const ts = _blCacheTs.get(ip);
+  if (_blCache.has(ip)) {
+    if (ts && (now - ts) < _blCacheTTL) {
+      return _blCache.get(ip);
+    }
+    // Entry expired — bersihkan dari kedua cache
+    _blCache.delete(ip);
+    _blCacheTs.delete(ip);
   }
   return false;
 }
@@ -536,6 +632,8 @@ function sacrificeRedirect(request, domain) {
   let sacrifice = null;
   for (const [k,v] of _sacrificeMap) { if (v.status==='active') { sacrifice=v; break; } }
   if (!sacrifice) {
+    // FIX: bersihkan entry 'sacrificed' yang sudah tidak terpakai sebelum membuat entry baru
+    for (const [k,v] of _sacrificeMap) { if (v.status==='sacrificed') _sacrificeMap.delete(k); }
     const id = hexHash(domain+Date.now(), 8);
     sacrifice = { id, subdomain:`sacrifice-${id}.${domain}`, energy:0, status:'active' };
     _sacrificeMap.set(sacrifice.subdomain, sacrifice);
@@ -567,7 +665,9 @@ function dnaGenerate(domain, path) {
 
   const pickWord = (s, i) => {
     let word = pool[(s+i*37) % pool.length];
-    if (Math.random()<0.3 && lsi[word]) { const arr=lsi[word]; word=arr[Math.floor(Math.random()*arr.length)]; }
+    // Fix: ganti Math.random() dengan deterministic seed agar DNA konsisten tiap request
+    const lsiSeed = hashSeed(domain+':'+i+':'+s);
+    if ((lsiSeed % 10) < 3 && lsi[word]) { const arr=lsi[word]; word=arr[lsiSeed % arr.length]; }
     return word;
   };
 
@@ -602,12 +702,11 @@ function dnaInjectHtml(html, domain, path) {
 // SECTION 10 — CSS STEGANOGRAPHY
 // ═══════════════════════════════════════════════════════════════════════
 
-function cssInject(html, cfg) {
+function cssInject(html, cfg, morphPhase=0) {
   if (!IMMORTAL.ENABLE_CSS_STEGO) return html;
   const keywords = (cfg.SEO_KEYWORDS||'').split(',').map(k=>k.trim()).filter(k=>k.length>1).slice(0,8);
   if (!keywords.length) return html;
-  // Fix: seed per-jam (slice -7) bukan per-10-detik (slice -4) agar stabil dan bisa di-cache
-  const seed = hashSeed(cfg.WARUNG_DOMAIN+Date.now().toString().slice(0,-7));
+  const seed = hashSeed(cfg.WARUNG_DOMAIN+Date.now().toString().slice(0,-7)+':'+morphPhase);
   let cssVars = '';
   let cssRules = '';
   IMMORTAL.CSS_VARS.forEach((varName,idx) => {
@@ -635,29 +734,36 @@ function cssInject(html, cfg) {
 // SECTION 11 — GHOST BODY
 // ═══════════════════════════════════════════════════════════════════════
 
-// Fix: cache ghostBody per path+domain agar tidak rebuild tiap request
+// Cache ghostBody per path+domain — cache STRUKTUR saja, bukan nonce
+// Nonce diinject fresh tiap kali dari cached template (CSP-safe)
 const _ghostCache = new LRUMap(200);
 
 function ghostBody(cfg, path, contentData) {
   if (!IMMORTAL.ENABLE_GHOST_BODY) return null;
-  // Cache key: domain + path + title (konten berbeda = cache berbeda)
+  // FIX Bug #8: pisahkan cache template dari nonce.
+  // Yang di-cache hanya bagian statis (sebelum & sesudah <script nonce="...">)
+  // Nonce selalu fresh tiap pemanggilan agar CSP valid.
   const ck = cfg.WARUNG_DOMAIN+':'+path+':'+(contentData?.title||'');
-  if (_ghostCache.has(ck)) return _ghostCache.get(ck);
-  const nonce = generateNonce();
-  const cid   = 'ghost-'+hexHash(path+Date.now().toString(), 8);
-  // Fix: ganti unescape() deprecated dengan TextEncoder-safe approach
+  const nonce = generateNonce(); // selalu fresh, tidak di-cache
+  let cached = _ghostCache.get(ck);
+  if (cached) {
+    // Ganti placeholder nonce dengan nonce baru
+    return cached.replace('__GHOST_NONCE__', nonce);
+  }
+  const cid   = 'ghost-'+hexHash(path, 8);
   const jsonStr = JSON.stringify(contentData);
   const dataAttr = btoa(new TextEncoder().encode(jsonStr).reduce((acc,b)=>acc+String.fromCharCode(b),''));
-  const result = `<!DOCTYPE html><html lang="id"><head>
+  // Gunakan __GHOST_NONCE__ sebagai placeholder yang akan diganti tiap request
+  const template = `<!DOCTYPE html><html lang="id"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${h(cfg.WARUNG_NAME)}</title>
 <style>body{font-family:system-ui,sans-serif;margin:0;background:#f5f5f7}.ghost-container{max-width:1200px;margin:0 auto;padding:20px}.ghost-loader{text-align:center;padding:50px;opacity:.7}@keyframes pulse{0%{opacity:.3}50%{opacity:1}100%{opacity:.3}}.ghost-loader::after{content:"Loading...";animation:pulse 1.5s infinite;display:block}</style>
 </head><body>
 <div id="${cid}" class="ghost-container" data-content='${dataAttr}'><div class="ghost-loader"></div></div>
-<script nonce="${nonce}">(function(){const c=document.getElementById('${cid}');try{const raw=atob(c.dataset.content);const bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);const d=JSON.parse(new TextDecoder().decode(bytes));setTimeout(()=>{let html='<nav><a href="/">${h(cfg.WARUNG_NAME)}</a></nav><main><h1>'+(d.title||'')+'</h1>';if(d.description)html+='<p>'+d.description+'</p>';html+='</main><footer>&copy; ${new Date().getFullYear()} ${h(cfg.WARUNG_NAME)}</footer>';c.innerHTML=html;},Math.random()*50+50);}catch(e){c.innerHTML='<p>Please refresh.</p>';}})();</script>
+<script nonce="__GHOST_NONCE__">(function(){const c=document.getElementById('${cid}');try{const raw=atob(c.dataset.content);const bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);const d=JSON.parse(new TextDecoder().decode(bytes));setTimeout(()=>{let html='<nav><a href="/">${h(cfg.WARUNG_NAME)}</a></nav><main><h1>'+(d.title||'')+'</h1>';if(d.description)html+='<p>'+d.description+'</p>';html+='</main><footer>&copy; ${new Date().getFullYear()} ${h(cfg.WARUNG_NAME)}</footer>';c.innerHTML=html;},Math.random()*50+50);}catch(e){c.innerHTML='<p>Please refresh.</p>';}})();<\/script>
 </body></html>`;
-  _ghostCache.set(ck, result);
-  return result;
+  _ghostCache.set(ck, template);
+  return template.replace('__GHOST_NONCE__', nonce);
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -688,7 +794,6 @@ function getMoonPhase() {
 class DapurClient {
   constructor(cfg, env, ctx=null) {
     this.baseUrl       = cfg.DAPUR_BASE_URL+'/api/v1';
-    this.playerBaseUrl = cfg.DAPUR_BASE_URL;
     this.apiKey        = cfg.DAPUR_API_KEY;
     this.cacheTtl      = cfg.DAPUR_CACHE_TTL;
     this.debug         = cfg.DAPUR_DEBUG;
@@ -698,7 +803,7 @@ class DapurClient {
     this.domain        = cfg.WARUNG_DOMAIN;
     this.baseUrlSite   = cfg.WARUNG_BASE_URL;
     this.cachePrefix   = hexHash(this.apiKey, 8);
-    this.hmacSecret    = env.HMAC_SECRET || '';
+    // hmacSecret dihapus — signing adalah tugas Dapur, bukan Warung
   }
 
   getMediaList(params={})  { return this._fetch('/media', params); }
@@ -759,19 +864,28 @@ class DapurClient {
     } catch(err) { logError('DapurClient.config', err); return null; }
   }
 
+  // Warung tidak perlu tahu HMAC — minta URL jadi ke Dapur.
+  // Dapur yang sign, Warung tinggal embed hasilnya.
   async getPlayerUrl(id) {
-    const signingKey = this.hmacSecret||this.apiKey;
-    const timestamp  = Math.floor(Date.now()/1000);
-    const signature  = await hmacSha256(id+'|'+timestamp+'|'+this.domain, signingKey);
-    const warungFp   = hashSeed(this.domain+this.baseUrlSite).toString(16);
-    return this.playerBaseUrl+'/player.php?id='+id+'&t='+timestamp+'&s='+signature+'&w='+warungFp;
+    try {
+      const resp = await fetch(this.baseUrl+'/player-url/'+id, {
+        headers: { 'X-API-Key': this.apiKey, 'Accept': 'application/json' },
+      });
+      if (!resp.ok) return null;
+      const json = await resp.json();
+      return json?.data?.player_url || null;
+    } catch(err) { logError('DapurClient.getPlayerUrl', err); return null; }
   }
 
   async getDownloadUrl(id) {
-    const signingKey = this.hmacSecret||this.apiKey;
-    const timestamp  = Math.floor(Date.now()/1000);
-    const signature  = await hmacSha256('download|'+id+'|'+timestamp+'|'+this.domain, signingKey);
-    return this.playerBaseUrl+'/download/'+id+'?t='+timestamp+'&s='+signature;
+    try {
+      const resp = await fetch(this.baseUrl+'/download-url/'+id, {
+        headers: { 'X-API-Key': this.apiKey, 'Accept': 'application/json' },
+      });
+      if (!resp.ok) return null;
+      const json = await resp.json();
+      return json?.data?.download_url || null;
+    } catch(err) { logError('DapurClient.getDownloadUrl', err); return null; }
   }
 
   async _fetch(path, params={}, useCache=true) {
@@ -996,78 +1110,19 @@ function sanitizeAdCode(code) {
     .replace(/(<(?:ins|iframe|div|a)\b[^>]*)\son\w+='[^']*'/gi, '$1');
 }
 
-// ── Default ad codes (fallback jika env var kosong) ──────────────────────────
-const _ADS_DEFAULT = {
-  header_top:    { d:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5823946"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, m:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5824016"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>` },
-  before_grid:   { d:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5823946"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, m:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5824016"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>` },
-  mid_grid:      { d:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5823946"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, m:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5824016"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>` },
-  after_grid:    { d:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5846572"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, m:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5845680"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>` },
-  sidebar_top:   { d:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5824012"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, m:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5846568"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>` },
-  sidebar_mid:   { d:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5824012"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, m:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5846568"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>` },
-  sidebar_bottom:{ d:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5824012"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, m:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5846568"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>` },
-  after_content: { d:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5846572"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, m:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5845680"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>` },
-  footer_top:    { d:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5846572"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, m:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5845680"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>` },
-};
-
-/**
- * getAdsSlots — Membaca kode iklan dari Cloudflare Environment Variables.
- *
- * Cara edit: Cloudflare Dashboard → Pages/Workers → Settings → Environment Variables
- * Setiap slot punya dua variabel: _DESKTOP dan _MOBILE
- * Jika variabel kosong/tidak di-set, kode default (hardcoded di atas) dipakai sebagai fallback.
- *
- * Daftar variabel yang bisa di-set:
- *   ADS_ENABLED                  true/false — matikan semua iklan
- *   ADS_HEADER_TOP_DESKTOP       kode HTML iklan header (desktop)
- *   ADS_HEADER_TOP_MOBILE        kode HTML iklan header (mobile)
- *   ADS_HEADER_TOP_ENABLED       true/false — aktif/nonaktif slot ini
- *   ADS_BEFORE_GRID_DESKTOP      kode HTML sebelum grid (desktop)
- *   ADS_BEFORE_GRID_MOBILE       kode HTML sebelum grid (mobile)
- *   ADS_BEFORE_GRID_ENABLED      true/false
- *   ADS_MID_GRID_DESKTOP         kode HTML tengah grid (desktop)
- *   ADS_MID_GRID_MOBILE          kode HTML tengah grid (mobile)
- *   ADS_MID_GRID_ENABLED         true/false
- *   ADS_MID_GRID_INSERT_AFTER    angka — sisipkan setelah item ke-N (default: 6)
- *   ADS_AFTER_GRID_DESKTOP       kode HTML setelah grid (desktop)
- *   ADS_AFTER_GRID_MOBILE        kode HTML setelah grid (mobile)
- *   ADS_AFTER_GRID_ENABLED       true/false
- *   ADS_SIDEBAR_TOP_DESKTOP      kode HTML sidebar atas (desktop)
- *   ADS_SIDEBAR_TOP_MOBILE       kode HTML sidebar atas (mobile)
- *   ADS_SIDEBAR_TOP_ENABLED      true/false
- *   ADS_SIDEBAR_MID_DESKTOP      kode HTML sidebar tengah (desktop)
- *   ADS_SIDEBAR_MID_MOBILE       kode HTML sidebar tengah (mobile)
- *   ADS_SIDEBAR_MID_ENABLED      true/false
- *   ADS_SIDEBAR_BOTTOM_DESKTOP   kode HTML sidebar bawah (desktop)
- *   ADS_SIDEBAR_BOTTOM_MOBILE    kode HTML sidebar bawah (mobile)
- *   ADS_SIDEBAR_BOTTOM_ENABLED   true/false
- *   ADS_AFTER_CONTENT_DESKTOP    kode HTML setelah konten (desktop)
- *   ADS_AFTER_CONTENT_MOBILE     kode HTML setelah konten (mobile)
- *   ADS_AFTER_CONTENT_ENABLED    true/false
- *   ADS_FOOTER_TOP_DESKTOP       kode HTML footer atas (desktop)
- *   ADS_FOOTER_TOP_MOBILE        kode HTML footer atas (mobile)
- *   ADS_FOOTER_TOP_ENABLED       true/false
- */
 function getAdsSlots(cfg) {
-  const ck = cfg.ADS_ADSENSE_CLIENT+':'+cfg.WARUNG_DOMAIN
-    // Sertakan hash dari semua env ads agar cache auto-invalid saat ada perubahan
-    + ':' + (cfg.ADS_HEADER_TOP_DESKTOP||'') + (cfg.ADS_MID_GRID_INSERT_AFTER||'');
+  const ck = cfg.ADS_ADSENSE_CLIENT+':'+cfg.WARUNG_DOMAIN;
   if (_adsSlotsCache.has(ck)) return _adsSlotsCache.get(ck);
-
-  // Helper: pakai env var jika ada, fallback ke default
-  const d = (key, slot) => cfg[key] || _ADS_DEFAULT[slot]?.d || '';
-  const m = (key, slot) => cfg[key] || _ADS_DEFAULT[slot]?.m || '';
-  const en = (key) => cfg[key] !== false; // default true
-
   const slots = {
-    header_top:    { enabled:en('ADS_HEADER_TOP_ENABLED'),     type:'html', code_desktop:d('ADS_HEADER_TOP_DESKTOP','header_top'),       code_mobile:m('ADS_HEADER_TOP_MOBILE','header_top'),       label:true,        align:'center', margin:'0 0 4px' },
-    before_grid:   { enabled:en('ADS_BEFORE_GRID_ENABLED'),    type:'html', code_desktop:d('ADS_BEFORE_GRID_DESKTOP','before_grid'),     code_mobile:m('ADS_BEFORE_GRID_MOBILE','before_grid'),     label:'Sponsored', align:'center', margin:'8px 0 16px' },
-    mid_grid:      { enabled:en('ADS_MID_GRID_ENABLED'),       type:'html', code_desktop:d('ADS_MID_GRID_DESKTOP','mid_grid'),           code_mobile:m('ADS_MID_GRID_MOBILE','mid_grid'),           label:'Iklan',     align:'center', margin:'4px 0', insert_after:cfg.ADS_MID_GRID_INSERT_AFTER },
-    after_grid:    { enabled:en('ADS_AFTER_GRID_ENABLED'),     type:'html', code_desktop:d('ADS_AFTER_GRID_DESKTOP','after_grid'),       code_mobile:m('ADS_AFTER_GRID_MOBILE','after_grid'),       label:true,        align:'center', margin:'16px 0 8px' },
-    sidebar_top:   { enabled:en('ADS_SIDEBAR_TOP_ENABLED'),    type:'html', code_desktop:d('ADS_SIDEBAR_TOP_DESKTOP','sidebar_top'),     code_mobile:m('ADS_SIDEBAR_TOP_MOBILE','sidebar_top'),     label:true,        align:'center', margin:'0 0 16px' },
-    sidebar_mid:   { enabled:en('ADS_SIDEBAR_MID_ENABLED'),    type:'html', code_desktop:d('ADS_SIDEBAR_MID_DESKTOP','sidebar_mid'),     code_mobile:m('ADS_SIDEBAR_MID_MOBILE','sidebar_mid'),     label:true,        align:'center', margin:'0 0 16px' },
-    sidebar_bottom:{ enabled:en('ADS_SIDEBAR_BOTTOM_ENABLED'), type:'html', code_desktop:d('ADS_SIDEBAR_BOTTOM_DESKTOP','sidebar_bottom'),code_mobile:m('ADS_SIDEBAR_BOTTOM_MOBILE','sidebar_bottom'),label:true,        align:'center', margin:'0' },
-    after_content: { enabled:en('ADS_AFTER_CONTENT_ENABLED'),  type:'html', code_desktop:d('ADS_AFTER_CONTENT_DESKTOP','after_content'), code_mobile:m('ADS_AFTER_CONTENT_MOBILE','after_content'), label:true,        align:'center', margin:'24px 0' },
-    footer_top:    { enabled:en('ADS_FOOTER_TOP_ENABLED'),     type:'html', code_desktop:d('ADS_FOOTER_TOP_DESKTOP','footer_top'),       code_mobile:m('ADS_FOOTER_TOP_MOBILE','footer_top'),       label:true,        align:'center', margin:'0' },
+    header_top:   { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5823946"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5824016"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'0 0 4px' },
+    before_grid:  { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5823946"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5824016"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:'Sponsored', align:'center', margin:'8px 0 16px' },
+    mid_grid:     { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5823946"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5824016"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:'Iklan', align:'center', margin:'4px 0', insert_after:6 },
+    after_grid:   { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5846572"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5845680"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'16px 0 8px' },
+    sidebar_top:  { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5824012"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5846568"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'0 0 16px' },
+    sidebar_mid:  { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5824012"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5846568"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'0 0 16px' },
+    sidebar_bottom:{ enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5824012"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5846568"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'0' },
+    after_content:{ enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5846572"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5845680"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'24px 0' },
+    footer_top:   { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e2" data-zoneid="5846572"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> <ins class="eas6a97888e10" data-zoneid="5845680"></ins> <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, label:true, align:'center', margin:'0' },
   };
   _adsSlotsCache.set(ck, slots);
   return slots;
@@ -1116,7 +1171,7 @@ function renderBannerMidGrid(index, cfg, request=null, nonce='') {
   if (!cfg.ADS_ENABLED) return '';
   const slot=getAdsSlots(cfg)['mid_grid'];
   if (!slot||!slot.enabled) return '';
-  if (index!==parseInt(slot.insert_after||6)) return '';
+  // renderGrid sudah memanggil ini hanya saat i%6===5
   return renderBanner('mid_grid', cfg, request, nonce);
 }
 
@@ -1143,30 +1198,431 @@ function adsenseScript(cfg) {
 // ═══════════════════════════════════════════════════════════════════════
 
 function getUniqueTheme(cfg) {
-  if (_themeCache.has(cfg.WARUNG_DOMAIN)) return _themeCache.get(cfg.WARUNG_DOMAIN);
-  const domain=cfg.WARUNG_DOMAIN, seed=hashSeed(domain);
-  const hue=seed%360, hs=seed%100;
-  const fonts=["'DM Sans',system-ui,sans-serif","'Plus Jakarta Sans',system-ui,sans-serif","'Outfit',system-ui,sans-serif","'Figtree',system-ui,sans-serif","'Sora',system-ui,sans-serif","'Nunito',system-ui,sans-serif","'Manrope',system-ui,sans-serif"];
-  const widths=[1200,1260,1280,1320,1360];
-  const accentH=hue, accentS=55+hs%20, accentL=58+hs%12;
-  const accent2H=(hue+30)%360;
-  const fontName=fonts[seed%fonts.length].split("'")[1].replace(/ /g,'+');
-  const result=`<style id="theme-${(seed%10000).toString(16)}">
-@import url('https://fonts.googleapis.com/css2?family=${fontName}:wght@400;500;600;700;800;900&display=swap');
+  const a    = cfg.THEME_ACCENT    || '#ffaa00';
+  const a2   = cfg.THEME_ACCENT2   || '#ffc233';
+  const hexToRgb = (hex) => {
+    const r=parseInt((hex||'#ffaa00').slice(1,3),16), g=parseInt((hex||'#ffaa00').slice(3,5),16), b=parseInt((hex||'#ffaa00').slice(5,7),16);
+    return isNaN(r)?'255,170,0':`${r},${g},${b}`;
+  };
+  const dim  = `rgba(${hexToRgb(a)},.15)`;
+  const bg   = cfg.THEME_BG    || '#0a0a0a';
+  const bg2  = cfg.THEME_BG2   || '#121212';
+  const bg3  = cfg.THEME_BG3   || '#1a1a1a';
+  const bg4  = '#1f1f1f';
+  const fg   = cfg.THEME_FG    || '#ffffff';
+  const fgDim= cfg.THEME_FG_DIM|| '#888888';
+  const brd  = cfg.THEME_BORDER|| '#252525';
+  const brd2 = '#333';
+  const font = cfg.THEME_FONT  || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+  const navBg= cfg.THEME_NAV_STYLE==='gold' ? a : bg2;
+  const navFg= cfg.THEME_NAV_STYLE==='gold' ? '#000' : fg;
+  const cacheKey = cfg.WARUNG_DOMAIN+':theme:'+a+bg;
+  if (_themeCache.has(cacheKey)) return _themeCache.get(cacheKey);
+  const result = `<style id="premium-tube-theme">
 :root{
-  --accent:hsl(${accentH},${accentS}%,${accentL}%);
-  --accent2:hsl(${accent2H},${accentS}%,${accentL+8}%);
-  --accent-dim:hsla(${accentH},${accentS}%,${accentL}%,.15);
-  --font-primary:${fonts[seed%fonts.length]};
-  --w:${widths[seed%widths.length]}px;
-  --r:${[8,10,12,14][seed%4]}px;
-  --r-sm:${[6,7,8][seed%3]}px;
-  --r-xs:${[4,5,6][seed%3]}px;
-  --r-pill:99px;
-  --t:${[160,180,200,220][seed%4]}ms;
+  --accent:${a};--accent2:${a2};--accent-dim:${dim};
+  --bg:${bg};--bg2:${bg2};--bg3:${bg3};--bg4:${bg4};
+  --border:${brd};--border2:${brd2};
+  --text:${fg};--text-dim:${fgDim};
+  --nav-bg:${navBg};--nav-fg:${navFg};
+  --gold:${a};--gold-dim:${dim};
+  --font-primary:${font};
 }
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  font-family:var(--font-primary);
+  background:var(--bg);
+  color:var(--text);
+  padding-bottom:70px;
+}
+/* HEADER */
+.header {
+  background:var(--bg2);
+  position:sticky; top:0; z-index:100;
+  border-bottom:1px solid #2a2a2a;
+  padding:8px 0;
+}
+.header-container {
+  padding:0 12px;
+  display:flex; align-items:center;
+  justify-content:space-between; gap:8px;
+}
+.logo {
+  font-size:20px; font-weight:900;
+  color:var(--gold); text-decoration:none;
+  white-space:nowrap; letter-spacing:-0.5px;
+}
+.logo span { color:var(--text); }
+.search-bar {
+  flex:1; background:var(--bg4); border-radius:30px;
+  padding:7px 14px; display:flex; align-items:center;
+  border:1px solid var(--border2); transition:border-color .2s;
+}
+.search-bar:focus-within { border-color:var(--gold); }
+.search-bar input {
+  background:none; border:none; color:var(--text);
+  width:100%; font-size:13px; outline:none;
+}
+.search-bar input::placeholder { color:#555; }
+.search-bar button {
+  background:none; border:none;
+  color:var(--gold); font-size:14px; cursor:pointer;
+}
+.menu-btn {
+  background:none; border:none; color:var(--gold);
+  font-size:22px; width:36px; height:36px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; flex-shrink:0;
+}
+/* CATEGORIES */
+.categories {
+  background:#0f0f0f; border-bottom:1px solid #222;
+  padding:10px 0; overflow-x:auto;
+  -webkit-overflow-scrolling:touch; scrollbar-width:none; white-space:nowrap;
+}
+.categories::-webkit-scrollbar { display:none; }
+.categories-inner { padding:0 12px; display:inline-flex; gap:18px; }
+.cat {
+  color:var(--text-dim); text-decoration:none;
+  font-size:13px; font-weight:700; padding:4px 0;
+  border-bottom:2px solid transparent;
+  transition:color .2s, border-color .2s; cursor:pointer;
+}
+.cat.active { color:var(--gold); border-bottom-color:var(--gold); }
+/* MAIN */
+.main { padding:12px; }
+.sec-header {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:12px; margin-top:4px;
+}
+.sec-title { font-size:15px; font-weight:800; color:var(--gold); }
+.sec-title i { margin-right:6px; }
+.sec-count {
+  background:var(--bg3); color:#aaa;
+  padding:4px 10px; border-radius:20px;
+  font-size:11px; border:1px solid var(--border2);
+}
+/* TRENDING */
+.trending-strip {
+  overflow-x:auto; -webkit-overflow-scrolling:touch;
+  scrollbar-width:none; margin-bottom:18px;
+}
+.trending-strip::-webkit-scrollbar { display:none; }
+.trending-inner { display:inline-flex; gap:10px; padding:2px 0; }
+.t-card {
+  display:block; text-decoration:none; color:inherit;
+  width:140px; background:var(--bg2);
+  border-radius:8px; border:1px solid var(--border);
+  overflow:hidden; flex-shrink:0; cursor:pointer;
+  transition:transform .2s;
+}
+.t-card:hover { transform:translateY(-2px); }
+.t-img {
+  position:relative; aspect-ratio:16/9;
+  background:var(--bg4); overflow:hidden;
+}
+.t-img img { width:100%; height:100%; object-fit:cover; display:block; }
+.t-num {
+  position:absolute; top:4px; left:4px;
+  background:var(--gold); color:#000;
+  width:18px; height:18px; border-radius:4px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:900; z-index:2;
+}
+.t-dur {
+  position:absolute; bottom:4px; right:4px;
+  background:rgba(0,0,0,.85); color:#fff;
+  padding:2px 5px; border-radius:3px; font-size:8px; font-weight:600;
+}
+.t-info { padding:7px; }
+.t-title {
+  font-size:11px; font-weight:600; color:var(--text);
+  display:-webkit-box; -webkit-line-clamp:2;
+  -webkit-box-orient:vertical; overflow:hidden; height:27px; line-height:1.25;
+}
+/* VIDEO GRID */
+.v-grid {
+  display:grid; gap:8px;
+  grid-template-columns:repeat(2,1fr);
+}
+@media(min-width:480px){ .v-grid{grid-template-columns:repeat(3,1fr)} }
+@media(min-width:768px){ .v-grid{grid-template-columns:repeat(4,1fr)} }
+.v-card {
+  display:block; text-decoration:none; color:inherit;
+  background:var(--bg2); border-radius:8px; overflow:hidden;
+  border:1px solid var(--border); cursor:pointer;
+  transition:transform .15s, border-color .2s;
+}
+.v-card:hover { border-color:#3a3a3a; transform:translateY(-2px); }
+.v-img {
+  position:relative; aspect-ratio:16/9;
+  background:var(--bg4); overflow:hidden;
+}
+.v-img img { width:100%; height:100%; object-fit:cover; display:block; }
+.badge-hot {
+  position:absolute; top:4px; left:4px;
+  background:var(--gold); color:#000;
+  padding:2px 6px; border-radius:4px; font-size:9px; font-weight:900;
+}
+.badge-qual {
+  position:absolute; top:4px; right:4px;
+  background:rgba(0,0,0,.8); color:var(--gold);
+  padding:2px 6px; border-radius:4px; font-size:8px; font-weight:800;
+  border:1px solid var(--gold);
+}
+.badge-dur {
+  position:absolute; bottom:4px; right:4px;
+  background:rgba(0,0,0,.9); color:#fff;
+  padding:2px 6px; border-radius:4px; font-size:8px; font-weight:600;
+}
+.v-info { padding:8px 7px 9px; }
+.v-title {
+  font-size:12px; font-weight:600; color:var(--text);
+  display:-webkit-box; -webkit-line-clamp:2;
+  -webkit-box-orient:vertical; overflow:hidden; height:30px;
+  line-height:1.28; margin-bottom:5px;
+}
+.v-meta { display:flex; gap:8px; color:var(--text-dim); font-size:9px; }
+.v-meta i { color:var(--gold); margin-right:2px; font-size:8px; }
+/* SKELETON */
+@keyframes shimmer {
+  0%   { background-position:-200% center; }
+  100% { background-position:200% center; }
+}
+.skeleton-card .v-img {
+  background:linear-gradient(90deg,#1a1a1a 25%,#2a2a2a 50%,#1a1a1a 75%);
+  background-size:200% auto;
+  animation:shimmer 1.4s ease-in-out infinite;
+}
+.skeleton-line {
+  height:10px; border-radius:4px; margin-bottom:5px;
+  background:linear-gradient(90deg,#1a1a1a 25%,#2a2a2a 50%,#1a1a1a 75%);
+  background-size:200% auto;
+  animation:shimmer 1.4s ease-in-out infinite;
+}
+.skeleton-line.short { width:60%; }
+/* PROMO */
+.promo-banner {
+  background:linear-gradient(135deg,#1d1200,#1a1a1a);
+  border:1px solid #3a2a00; border-radius:10px;
+  padding:12px; margin:16px 0;
+  text-align:center; font-size:12px; font-weight:700;
+  color:var(--gold);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  cursor:pointer;
+}
+.promo-banner i { font-size:15px; }
+/* TAGS */
+.tags { display:flex; flex-wrap:wrap; gap:6px; margin:12px 0; }
+.tag {
+  background:var(--bg3); border:1px solid var(--border2);
+  color:#aaa; padding:5px 11px; border-radius:20px;
+  font-size:10px; font-weight:700; cursor:pointer; transition:all .15s;
+}
+.tag.active { background:var(--gold-dim); border-color:var(--gold); color:var(--gold); }
+/* LOAD MORE */
+.load-more-btn {
+  background:var(--bg3); border:1px solid var(--border2);
+  color:var(--gold); padding:13px; border-radius:8px;
+  text-align:center; margin:16px 0;
+  font-weight:700; font-size:13px; cursor:pointer;
+  transition:background .2s;
+}
+.load-more-btn:hover { background:#222; }
+/* PAGINATION */
+.pager {
+  display:none; justify-content:center;
+  gap:5px; margin:16px 0; flex-wrap:wrap;
+}
+.pg {
+  background:var(--bg3); border:1px solid var(--border2); color:#aaa;
+  width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+  border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; transition:all .15s;
+}
+.pg:hover { border-color:var(--gold); color:var(--gold); }
+.pg.active { background:var(--gold); color:#000; border-color:var(--gold); }
+.pg.wide { width:auto; padding:0 14px; }
+/* BOTTOM NAV */
+.bottom-nav {
+  position:fixed; bottom:0; left:0; right:0;
+  background:rgba(18,18,18,.97);
+  backdrop-filter:blur(12px);
+  border-top:1px solid #2a2a2a;
+  display:flex; justify-content:space-around;
+  padding:8px 0 12px; z-index:100;
+}
+.bn-item {
+  color:#555; text-decoration:none; font-size:10px;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  flex:1; cursor:pointer; transition:color .15s;
+}
+.bn-item i { font-size:19px; }
+.bn-item span { font-weight:700; }
+.bn-item.active { color:var(--gold); }
+.bn-icon-wrap { position:relative; line-height:1; }
+.dot {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--gold); position:absolute; top:-1px; right:-1px;
+}
+/* MODAL */
+.modal-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.96); z-index:200; overflow-y:auto;
+}
+.modal-overlay.show { display:block; }
+.modal-inner { padding:20px; }
+.modal-head {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-bottom:28px;
+}
+.modal-close {
+  background:none; border:none; color:var(--gold);
+  font-size:24px; cursor:pointer;
+}
+.modal-nav { list-style:none; }
+.modal-nav li { margin-bottom:22px; }
+.modal-nav a {
+  color:var(--text); text-decoration:none;
+  font-size:17px; font-weight:700;
+  display:flex; align-items:center; gap:16px;
+}
+.modal-nav i { color:var(--gold); width:24px; }
+/* FOOTER */
+.footer {
+  background:var(--bg); margin-top:20px;
+  padding:24px 15px 12px; border-top:1px solid #1e1e1e;
+}
+.footer-grid {
+  display:grid; grid-template-columns:repeat(2,1fr);
+  gap:16px; margin-bottom:18px;
+}
+.footer-col h4 {
+  color:var(--gold); font-size:11px; font-weight:900;
+  text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px;
+}
+.footer-col ul { list-style:none; }
+.footer-col li { margin-bottom:7px; }
+.footer-col a { color:#666; text-decoration:none; font-size:12px; }
+.footer-copy {
+  text-align:center; color:#333; font-size:10px;
+  padding-top:14px; border-top:1px solid #1a1a1a;
+}
+/* ADS */
+.ad-slot{overflow:hidden;width:100%;max-width:100%;box-sizing:border-box;min-height:1px}
+.ad-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;line-height:1}
+.ads-desktop{display:none}.ads-mobile{display:block}
+@media(min-width:768px){.ads-desktop{display:block}.ads-mobile{display:none}}
+.ad-slot ins,.ad-slot iframe,.ad-slot img{max-width:100%!important;width:auto!important}
+/* MISC */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.container{max-width:1280px;margin:0 auto;padding:0 12px;width:100%}
+.content-area{padding:12px 12px 14px;width:100%}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.section-title{font-size:1rem;font-weight:800;color:var(--gold);display:flex;align-items:center;gap:7px}
+.section-count{background:var(--bg3);color:var(--text-dim);padding:3px 10px;border-radius:99px;font-size:.68rem;border:1px solid var(--border2)}
+.breadcrumb{font-size:.78rem;margin-bottom:10px;color:var(--text-dim)}
+.breadcrumb ol{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.breadcrumb li{display:inline-flex;align-items:center;gap:4px}
+.breadcrumb a{color:var(--text-dim);text-decoration:none}
+.breadcrumb a:hover{color:var(--gold)}
+.breadcrumb .bc-sep{font-size:.6rem;color:#444;margin:0 2px}
+.page-title{font-size:1.2rem;font-weight:800;margin-bottom:8px}
+.page-desc{font-size:.82rem;color:var(--text-dim);margin-bottom:12px;line-height:1.6}
+.no-results{text-align:center;padding:40px 20px;color:var(--text-dim)}
+.tag-cloud{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+/* CONTENT GRID (legacy alias for v-grid) */
+.content-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;list-style:none;padding:0}
+@media(min-width:480px){.content-grid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:768px){.content-grid{grid-template-columns:repeat(4,1fr)}}
+/* VIEW PAGE */
+.view-layout{padding:12px;display:flex;flex-direction:column;gap:16px}
+@media(min-width:900px){.view-layout{flex-direction:row;align-items:flex-start}.view-content{flex:1 1 0;min-width:0}.view-sidebar{width:320px;flex-shrink:0}}
+.player-wrapper{border-radius:8px;overflow:hidden;margin-bottom:14px;background:#000;aspect-ratio:16/9}
+.player-wrapper iframe,.player-wrapper video{width:100%;height:100%;border:none;display:block}
+.content-title{font-size:1rem;font-weight:800;margin-bottom:8px}
+.content-meta{display:flex;flex-wrap:wrap;gap:8px 10px;color:var(--text-dim);font-size:.75rem;margin-bottom:10px}
+.content-meta i{color:var(--gold)}
+/* CONTENT TAGS */
+.content-tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+/* ACTION BUTTONS */
+.action-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:all .2s}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text-dim)}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold);background:rgba(255,170,0,.07)}
+/* WIDGET TITLE (sidebar heading) */
+.widget-title{font-size:.9rem;font-weight:800;color:var(--gold);display:flex;align-items:center;gap:7px;margin:0 0 12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+/* RELATED LIST */
+.related-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px}
+.related-list li{border-bottom:1px solid var(--border)}
+.related-list li:last-child{border-bottom:none}
+.related-item{display:flex;gap:10px;align-items:flex-start;padding:8px 0;text-decoration:none;color:inherit;transition:background .15s;border-radius:6px}
+.related-item:hover{background:var(--bg3);padding-left:6px}
+.related-item img{width:90px;height:54px;object-fit:cover;border-radius:5px;flex-shrink:0;background:var(--bg3)}
+.related-info{flex:1;min-width:0}
+.related-title{font-size:.78rem;font-weight:700;color:var(--text);line-height:1.4;margin:0 0 4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.related-meta{display:flex;gap:8px;flex-wrap:wrap;color:var(--text-dim);font-size:.7rem}
+.badge-small{background:var(--bg3);border:1px solid var(--border2);color:var(--text-dim);padding:1px 6px;border-radius:4px;font-size:.65rem;font-weight:700;display:inline-flex;align-items:center;gap:3px}
+.content-desc{margin:10px 0;font-size:.82rem;line-height:1.6;color:var(--text-dim)}
+.full-desc.hidden{display:none}
+.read-more{font-size:.76rem;color:var(--gold);margin-top:4px;text-decoration:underline;cursor:pointer;font-weight:700}
+/* STATIC PAGES */
+.static-content h2{font-size:1.1rem;font-weight:800;margin:20px 0 10px;color:var(--text)}
+.static-content p,.static-content li{margin-bottom:9px;line-height:1.75;color:var(--text-dim)}
+.static-content ul,.static-content ol{padding-left:18px;margin-bottom:10px}
+.static-content address{font-style:normal}
+.static-content a{color:var(--gold);text-decoration:underline}
+/* ERROR PAGE */
+.error-page{text-align:center;padding:60px 20px}
+.error-code{font-size:5rem;font-weight:900;color:var(--gold);line-height:1}
+.error-message{font-size:1.1rem;font-weight:700;margin:16px 0 8px}
+.error-desc{color:var(--text-dim);margin-bottom:24px}
+.btn-home{display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:#000;padding:12px 24px;border-radius:8px;font-weight:800;text-decoration:none}
+/* SEARCH PAGE */
+.search-header{padding:12px 0 8px}
+.search-title{font-size:.9rem;color:var(--text-dim);margin-bottom:4px}
+.search-title strong{color:var(--text)}
+/* PAGINATION */
+.pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin:16px 0;flex-wrap:wrap}
+.page-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--gold);padding:8px 16px;border-radius:8px;font-size:.8rem;font-weight:700;text-decoration:none;transition:background .2s}
+.page-btn:hover{background:#222}
+.page-numbers{display:flex;gap:4px;flex-wrap:wrap}
+.page-number{background:var(--bg3);border:1px solid var(--border2);color:#aaa;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:.78rem;font-weight:700;text-decoration:none;transition:all .15s}
+.page-number:hover{border-color:var(--gold);color:var(--gold)}
+.page-number.active{background:var(--gold);color:#000;border-color:var(--gold)}
+.page-ellipsis{color:var(--text-dim);padding:0 4px;line-height:36px}
+/* ALBUM */
+.album-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px}
+.album-thumb-btn{width:100%;cursor:pointer;background:none;border:none;padding:0;border-radius:6px;overflow:hidden;display:block}
+.album-thumb{width:100%;height:auto;border-radius:6px;transition:opacity .2s,transform .32s;display:block}
+.album-thumb-btn:hover .album-thumb{opacity:.85;transform:scale(1.04)}
+/* LIGHTBOX */
+.lightbox{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(16px)}
+.lightbox.hidden{display:none}
+.lightbox-content{position:relative;max-width:95vw;max-height:95vh;display:flex;flex-direction:column;align-items:center}
+.lightbox-image{max-width:100%;max-height:85vh;object-fit:contain;border-radius:6px}
+.lightbox-close{position:absolute;top:-48px;right:0;color:#fff;font-size:1rem;background:rgba(255,255,255,.1);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.lightbox-nav{display:flex;justify-content:space-between;width:100%;margin-top:12px}
+.lightbox-prev,.lightbox-next{color:#fff;background:rgba(255,255,255,.1);width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.lightbox-caption{color:rgba(255,255,255,.4);font-size:.76rem;text-align:center;margin-top:9px}
+/* TOAST */
+.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--gold);color:var(--gold);padding:9px 20px;border-radius:4px;font-size:.78rem;font-weight:700;z-index:9999;pointer-events:none}
+#backToTop{position:fixed;bottom:68px;right:10px;z-index:180;width:36px;height:36px;border-radius:8px;background:var(--gold);color:#000;display:flex;align-items:center;justify-content:center;transition:opacity .3s,visibility .3s;font-size:.72rem;opacity:0;visibility:hidden}
+.connection-status{position:fixed;bottom:68px;left:50%;transform:translateX(-50%);background:#ef4444;color:#fff;padding:7px 18px;border-radius:4px;font-size:.76rem;display:flex;align-items:center;gap:7px;z-index:400}
+/* FILTER TABS */
+.filter-tabs{display:flex;gap:6px;flex-wrap:wrap;padding:8px 0}
+.filter-tab{padding:6px 14px;border-radius:99px;font-size:.72rem;font-weight:800;flex-shrink:0;display:inline-flex;align-items:center;gap:5px;color:var(--text-dim);border:1px solid var(--border2);background:var(--bg3);transition:all .2s;text-decoration:none}
+.filter-tab:hover{background:var(--bg4);color:var(--text)}
+.filter-tab.active{background:var(--gold);color:#000;border-color:var(--gold)}
+/* CATEGORY STRIP (homepage filter bar) */
+.category-strip{background:#0f0f0f;border-bottom:1px solid #222;padding:10px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;white-space:nowrap}
+.category-strip::-webkit-scrollbar{display:none}
+.category-strip-inner{padding:0 12px;display:inline-flex;gap:8px}
+.strip-item{color:var(--text-dim);text-decoration:none;font-size:12px;font-weight:700;padding:5px 12px;border-radius:99px;border:1px solid var(--border2);background:var(--bg3);transition:all .2s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.strip-item:hover{background:var(--bg4);color:var(--text)}
+.strip-item.active{background:var(--gold);color:#000;border-color:var(--gold)}
 </style>`;
-  _themeCache.set(domain, result);
+  _themeCache.set(cacheKey, result);
   return result;
 }
 
@@ -1188,491 +1644,8 @@ function renderHead({ title, desc, canonical, ogImage, ogType, keywords, noindex
     'isPartOf':{'@type':'WebSite','name':cfg.WARUNG_NAME,'url':'https://'+cfg.WARUNG_DOMAIN},
   },null,0);
 
-  const criticalCss = `<style>
-/* ==============================================
-   THEME VARIABLES (dari getUniqueTheme)
-   ============================================== */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap');
-:root{
-  --accent:hsl(220,65%,62%);
-  --accent2:hsl(250,65%,70%);
-  --accent-dim:hsla(220,65%,62%,.15);
-  --font-primary:'DM Sans',system-ui,sans-serif;
-  --w:1260px;
-  --r:12px;
-  --r-sm:8px;
-  --r-xs:6px;
-  --r-pill:99px;
-  --t:180ms;
-}
-
-/* ==============================================
-   BANNER STYLES (dari bannerStyles)
-   ============================================== */
-.ad-slot{overflow:hidden;width:100%;max-width:100%;box-sizing:border-box;min-height:1px}
-.ad-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted,#666);margin-bottom:4px;line-height:1}
-.ads-desktop{display:block}.ads-mobile{display:none}
-@media(max-width:767px){.ads-desktop{display:none}.ads-mobile{display:block}}
-.ad-slot ins,.ad-slot iframe,.ad-slot img{max-width:100%!important;width:auto!important}
-.content-grid>li>.ad-slot--mid_grid,.content-grid>.ad-slot--mid_grid{grid-column:1/-1;width:100%}
-.ad-slot--header_top{min-height:50px}.ad-slot--before_grid,.ad-slot--after_grid{min-height:60px}
-.ad-slot--sidebar_top,.ad-slot--sidebar_mid{min-height:100px}
-
-/* ==============================================
-   CRITICAL CSS (yang sudah diperbaiki)
-   ============================================== */
-/* ── Reset ─────────────────────────────────── */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;color-scheme:dark;font-size:16px}
-body{font-family:var(--font-primary,'DM Sans',system-ui,sans-serif);font-size:15px;background:var(--bg,#0e0f14);color:var(--fg,#dde1ec);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-a{color:inherit;text-decoration:none}
-img{max-width:100%;height:auto;display:block}
-button{cursor:pointer;border:none;background:none;font:inherit}
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.skip-link{position:absolute;left:-9999px;top:auto;z-index:9999}
-.skip-link:focus{left:16px;top:16px;background:var(--accent);color:#fff;padding:8px 18px;border-radius:99px}
-
-/* ── Design Tokens ─────────────────────────── */
-:root{
-  --bg:#0e0f14;
-  --bg2:#14161e;
-  --bg3:#1c1f2a;
-  --bg4:#242837;
-  --bg5:#2d3145;
-  --fg:#dde1ec;
-  --fg2:#8b90a8;
-  --fg3:#4e5368;
-  --text-muted:var(--fg3);
-  --text-color:var(--fg);
-  --bg-card:var(--bg2);
-  --border-radius:12px;
-  --line:rgba(255,255,255,.06);
-  --line2:rgba(255,255,255,.11);
-  --r:12px;
-  --r-sm:8px;
-  --r-xs:6px;
-  --r-pill:99px;
-  --ease:cubic-bezier(.4,0,.2,1);
-  --t:180ms;
-  --nav-h:58px;
-  --w:1260px;
-}
-
-/* ── Layout ────────────────────────────────── */
-.container{max-width:var(--w);margin:0 auto;padding:0 20px;width:100%}
-.layout-main{display:grid;grid-template-columns:1fr 288px;gap:28px;padding:24px 0 56px}
-
-/* ── Navbar ────────────────────────────────── */
-.nav{
-  background:rgba(14,15,20,.88);
-  backdrop-filter:blur(24px) saturate(160%);
-  -webkit-backdrop-filter:blur(24px) saturate(160%);
-  border-bottom:1px solid var(--line);
-  position:sticky;top:0;z-index:200;
-  height:var(--nav-h)
-}
-.nav-inner{max-width:var(--w);margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:10px;height:100%;overflow:visible}
-.nav-logo{
-  font-size:1.1rem;font-weight:900;letter-spacing:-.03em;flex-shrink:0;
-  background:linear-gradient(135deg,var(--accent,#7c6fef) 0%,#a78bfa 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
-.nav-logo span{-webkit-text-fill-color:rgba(255,255,255,.28)}
-.nav-links{display:flex;gap:2px;list-style:none;margin-left:6px}
-.nav-links a{
-  padding:5px 13px;border-radius:var(--r-pill);
-  font-size:.81rem;font-weight:600;
-  color:var(--fg2);
-  display:flex;align-items:center;gap:5px;
-  transition:background var(--t) var(--ease),color var(--t) var(--ease)
-}
-.nav-links a:hover{background:var(--bg4);color:var(--fg)}
-.nav-links a.active{background:var(--accent,#7c6fef);color:#fff}
-.nav-search{flex:1;max-width:256px;margin-left:auto;position:relative;display:flex;align-items:center;z-index:0}
-.nav-search-icon{position:absolute;left:11px;color:var(--fg3);font-size:.78rem;pointer-events:none}
-.nav-search input{
-  width:100%;padding:7px 12px 7px 32px;
-  border:1px solid var(--line2);border-radius:var(--r-pill);
-  font-size:.82rem;background:var(--bg3);color:var(--fg);
-  outline:none;transition:border-color var(--t) var(--ease),box-shadow var(--t) var(--ease)
-}
-.nav-search input::placeholder{color:var(--fg3)}
-.nav-search input:focus{border-color:var(--accent,#7c6fef);box-shadow:0 0 0 3px rgba(124,111,239,.18)}
-.nav-menu-btn{
-  display:none;width:36px;height:36px;border-radius:var(--r-sm);
-  align-items:center;justify-content:center;
-  background:var(--bg3);color:var(--fg2);
-  transition:background var(--t) var(--ease);
-  position:relative;z-index:210;flex-shrink:0;cursor:pointer;
-  -webkit-tap-highlight-color:transparent;touch-action:manipulation
-}
-.nav-menu-btn:hover{background:var(--bg4);color:var(--fg)}
-
-/* ── Bottom Tab Bar ────────────────────────── */
-.bottom-nav{
-  display:none;position:fixed;bottom:0;left:0;right:0;
-  background:rgba(14,15,20,.96);
-  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-  border-top:1px solid var(--line);z-index:200;
-  padding-bottom:env(safe-area-inset-bottom,0);
-  box-sizing:content-box
-}
-.bottom-nav-inner{display:flex}
-.bottom-nav-item{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:3px;padding:7px 0;min-height:52px;
-  font-size:.57rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
-  color:var(--fg3);position:relative;
-  transition:color var(--t) var(--ease)
-}
-.bottom-nav-item i{font-size:1.05rem;transition:transform var(--t) var(--ease)}
-.bottom-nav-item.active{color:var(--accent,#7c6fef)}
-.bottom-nav-item.active i{transform:translateY(-1px)}
-.bottom-nav-item.active::after{
-  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
-  width:22px;height:2.5px;border-radius:0 0 3px 3px;background:var(--accent,#7c6fef)
-}
-
-/* ── Cards ─────────────────────────────────── */
-.content-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
-  gap:14px;
-  list-style:none;
-  padding:0
-}
-.card{
-  background:var(--bg2);border-radius:var(--r);overflow:hidden;
-  border:1px solid var(--line);
-  transition:transform var(--t) var(--ease),border-color var(--t) var(--ease),box-shadow var(--t) var(--ease);
-  height:100%;
-  display:flex;
-  flex-direction:column
-}
-.card:hover{transform:translateY(-4px);border-color:var(--line2);box-shadow:0 16px 48px rgba(0,0,0,.45)}
-.card-thumb{position:relative;overflow:hidden;background:var(--bg4);aspect-ratio:16/9}
-.card-thumb img{width:100%;height:100%;object-fit:cover;transition:transform .38s var(--ease)}
-.card:hover .card-thumb img{transform:scale(1.07)}
-.badge-duration{
-  position:absolute;bottom:7px;right:7px;
-  background:rgba(0,0,0,.78);backdrop-filter:blur(4px);
-  color:#fff;font-size:.58rem;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:.03em
-}
-.badge-type{
-  position:absolute;top:7px;left:7px;
-  background:rgba(0,0,0,.6);backdrop-filter:blur(4px);
-  color:#fff;font-size:.58rem;padding:3px 7px;border-radius:5px
-}
-.card-info{padding:10px 12px 13px;flex:1}
-.card-title{
-  font-size:.82rem;font-weight:700;line-height:1.42;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
-  color:var(--fg);margin-bottom:7px;letter-spacing:-.01em
-}
-.card-meta{display:flex;gap:8px;font-size:.68rem;color:var(--fg3);flex-wrap:wrap;align-items:center}
-
-/* ── Sidebar & Widgets ─────────────────────── */
-.sidebar{position:relative}
-.sidebar-sticky{position:sticky;top:calc(var(--nav-h) + 14px)}
-.widget{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
-.widget-title{
-  font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.09em;
-  color:var(--fg2);margin-bottom:14px;display:flex;align-items:center;gap:7px
-}
-.widget-title i{color:var(--accent,#7c6fef)}
-
-/* ── Home Filter Bar ───────────────────────── */
-.home-filter{display:none}
-.category-filter{display:flex;gap:5px;padding:9px 0;flex-wrap:nowrap;white-space:nowrap;align-items:center}
-.filter-tab{
-  padding:5px 15px;border-radius:var(--r-pill);
-  font-size:.78rem;font-weight:700;flex-shrink:0;
-  display:inline-flex;align-items:center;gap:5px;
-  color:var(--fg2);border:1px solid transparent;
-  transition:background var(--t) var(--ease),color var(--t) var(--ease),border-color var(--t) var(--ease)
-}
-.filter-tab:hover{background:var(--bg4);color:var(--fg);border-color:var(--line2)}
-.filter-tab.active{background:var(--accent,#7c6fef);color:#fff}
-.filter-tabs{display:flex;gap:5px;flex-wrap:wrap;padding:8px 0}
-.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.section-title{font-size:.9rem;font-weight:800;color:var(--fg);display:flex;align-items:center;gap:7px;letter-spacing:-.01em}
-.section-title i{color:var(--accent,#7c6fef);font-size:.8rem}
-.section-page{font-size:.78rem;font-weight:400;color:var(--fg3)}
-
-/* ── Page Header ───────────────────────────── */
-.page-header,.tag-header{
-  background:linear-gradient(180deg,var(--bg3) 0%,var(--bg) 100%);
-  border-bottom:1px solid var(--line);padding:22px 0 18px
-}
-.page-label{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--accent,#7c6fef);margin-bottom:7px;display:flex;align-items:center;gap:5px}
-.page-title{font-size:1.5rem;font-weight:900;color:var(--fg);line-height:1.2;margin-bottom:6px;letter-spacing:-.03em}
-.page-desc{font-size:.84rem;color:var(--fg2)}
-.tag-hero{font-size:1.8rem;font-weight:900;color:var(--fg);display:flex;align-items:center;gap:8px;margin:6px 0;letter-spacing:-.04em}
-.tag-hero i{color:var(--accent,#7c6fef);font-size:1.3rem}
-
-/* ── Breadcrumb ────────────────────────────── */
-.breadcrumb{font-size:.73rem;color:var(--fg3);margin-bottom:12px}
-.breadcrumb ol{display:flex;flex-wrap:wrap;gap:3px;list-style:none;align-items:center}
-.breadcrumb li{display:flex;align-items:center;gap:3px}
-.breadcrumb .fa-chevron-right{font-size:.55rem;opacity:.35}
-.breadcrumb a:hover{color:var(--fg);text-decoration:underline}
-
-/* ── Trending Widget ───────────────────────── */
-.trending-list{list-style:none}
-.trending-item a{
-  display:flex;gap:9px;padding:9px 0;border-bottom:1px solid var(--line);
-  align-items:center;transition:opacity var(--t) var(--ease)
-}
-.trending-item:last-child a{border-bottom:none}
-.trending-item a:hover{opacity:.65}
-.trending-item img{border-radius:var(--r-xs);object-fit:cover;flex-shrink:0;width:60px;height:34px}
-.trending-info p{font-size:.76rem;font-weight:700;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--fg)}
-.trending-info small{font-size:.67rem;color:var(--fg3);display:flex;align-items:center;gap:3px;margin-top:3px}
-.trending-num{font-size:.68rem;font-weight:900;color:var(--accent,#7c6fef);min-width:16px;text-align:center;flex-shrink:0}
-
-/* ── Trending Mobile Scroll ────────────────── */
-.trending-mobile-section{display:none;padding:12px 0;background:var(--bg2);border-bottom:1px solid var(--line)}
-.trending-mobile-header{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;padding:0 16px 9px;display:flex;align-items:center;gap:6px;color:var(--fg2)}
-.trending-mobile-header i{color:#f97316}
-.trending-scroll{display:flex;gap:10px;overflow-x:auto;padding:0 16px 4px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.trending-scroll::-webkit-scrollbar{display:none}
-.trending-scroll-item{flex-shrink:0;width:118px;scroll-snap-align:start}
-.trending-scroll-item a{display:block}
-.trending-scroll-item .t-thumb{position:relative;aspect-ratio:16/9;border-radius:var(--r-sm);overflow:hidden;background:var(--bg4);margin-bottom:6px}
-.trending-scroll-item .t-thumb img{width:100%;height:100%;object-fit:cover}
-.trending-scroll-item .t-num{position:absolute;top:4px;left:4px;background:rgba(0,0,0,.72);color:#fff;font-size:.56rem;font-weight:900;padding:2px 5px;border-radius:4px}
-.trending-scroll-item .t-title{font-size:.69rem;font-weight:700;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--fg)}
-
-/* ── View / Player Page ────────────────────── */
-.view-main{padding:0}
-.view-layout{display:grid;grid-template-columns:1fr 308px;gap:24px;max-width:var(--w);margin:0 auto;padding:20px 20px 56px}
-.view-content,.view-sidebar{min-width:0}
-.player-wrapper{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:var(--r);overflow:hidden;margin-bottom:14px;box-shadow:0 10px 40px rgba(0,0,0,.55)}
-.player-frame{position:absolute;inset:0;width:100%;height:100%;border:none}
-.content-info{margin-bottom:20px}
-.content-title{font-size:1.25rem;font-weight:800;line-height:1.3;margin-bottom:10px;color:var(--fg);letter-spacing:-.025em}
-.content-meta{display:flex;flex-wrap:wrap;gap:8px;font-size:.76rem;color:var(--fg2);margin-bottom:10px;align-items:center}
-.content-meta i{color:var(--fg3);font-size:.7rem}
-.content-tags{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
-.action-buttons{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px}
-
-/* ── Buttons ───────────────────────────────── */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:var(--r-pill);font-size:.8rem;font-weight:700;transition:all var(--t) var(--ease);cursor:pointer;min-height:38px}
-.btn-primary{background:var(--accent,#7c6fef);color:#fff}
-.btn-primary:hover{filter:brightness(1.12);transform:translateY(-1px)}
-.btn-outline{border:1.5px solid var(--line2);color:var(--fg2)}
-.btn-outline:hover{background:var(--bg4);color:var(--fg);border-color:var(--fg3)}
-
-/* ── Badges ────────────────────────────────── */
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:5px;font-size:.7rem;font-weight:800;background:rgba(124,111,239,.18);color:var(--accent,#7c6fef)}
-.badge-small{display:inline-flex;align-items:center;gap:3px;font-size:.64rem;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--bg4);color:var(--fg3)}
-
-/* ── Related List ──────────────────────────── */
-.related-list{display:flex;flex-direction:column;gap:6px;list-style:none}
-.related-item{display:flex;gap:9px;padding:7px;border-radius:var(--r-sm);transition:background var(--t) var(--ease)}
-.related-item:hover{background:var(--bg3)}
-.related-item img{border-radius:var(--r-xs);object-fit:cover;flex-shrink:0;width:60px;height:34px}
-.related-info{min-width:0;flex:1}
-.related-title{font-size:.76rem;font-weight:700;line-height:1.38;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--fg)}
-.related-meta{display:flex;gap:6px;font-size:.67rem;color:var(--fg3);margin-top:4px;flex-wrap:wrap}
-
-/* ── Pagination ────────────────────────────── */
-.pagination{display:flex;align-items:center;justify-content:center;gap:5px;padding:28px 0 8px;flex-wrap:wrap}
-.page-btn{padding:8px 18px;border-radius:var(--r-pill);background:var(--bg3);color:var(--fg2);font-size:.8rem;font-weight:700;display:flex;align-items:center;gap:5px;transition:all var(--t) var(--ease);min-height:40px;border:1px solid var(--line2)}
-.page-btn:hover{background:var(--accent,#7c6fef);color:#fff;border-color:var(--accent,#7c6fef)}
-.page-numbers{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
-.page-number{min-width:38px;height:38px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;color:var(--fg3);border:1px solid var(--line);transition:all var(--t) var(--ease)}
-.page-number.active{background:var(--accent,#7c6fef);color:#fff;border-color:var(--accent,#7c6fef)}
-.page-number:hover:not(.active){background:var(--bg4);color:var(--fg);border-color:var(--line2)}
-.page-ellipsis{color:var(--fg3);padding:0 3px}
-
-/* ── Tags ──────────────────────────────────── */
-.tag{display:inline-flex;align-items:center;padding:4px 11px;border-radius:var(--r-pill);background:var(--bg3);color:var(--fg2);font-size:.73rem;font-weight:600;transition:background var(--t) var(--ease),color var(--t) var(--ease);border:1px solid var(--line)}
-.tag:hover,.tag:active{background:var(--accent,#7c6fef);color:#fff;border-color:var(--accent,#7c6fef)}
-.tag-cloud{display:flex;flex-wrap:wrap;gap:5px}
-
-/* ── Category Sidebar ──────────────────────── */
-.category-sidebar{display:flex;flex-direction:column;gap:2px}
-.category-sidebar-item{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:var(--r-sm);font-size:.83rem;font-weight:600;color:var(--fg2);transition:background var(--t) var(--ease),color var(--t) var(--ease)}
-.category-sidebar-item i:first-child{color:var(--fg3);width:15px;text-align:center;transition:color var(--t) var(--ease)}
-.category-sidebar-item span{flex:1}
-.category-sidebar-item:hover{background:var(--bg4);color:var(--fg)}
-.category-sidebar-item:hover i:first-child,.category-sidebar-item.active i:first-child{color:var(--accent,#7c6fef)}
-.category-sidebar-item.active{background:rgba(124,111,239,.14);color:var(--accent,#7c6fef)}
-
-/* ── Search ────────────────────────────────── */
-.search-bar-large{margin-top:12px}
-.search-bar{display:flex;border:1px solid var(--line2);border-radius:var(--r-pill);overflow:hidden;background:var(--bg3)}
-.search-bar input{flex:1;padding:10px 16px;font-size:.88rem;background:none;outline:none;border:none;min-width:0;color:var(--fg)}
-.search-bar input::placeholder{color:var(--fg3)}
-.search-bar button{padding:0 16px;color:var(--accent,#7c6fef);font-size:.88rem}
-.search-stats{font-size:.8rem;color:var(--fg2);margin-bottom:13px;display:flex;align-items:center;gap:6px}
-.search-stats strong{color:var(--fg)}
-
-/* ── Mobile Nav Drawer ─────────────────────── */
-.mobile-nav{position:fixed;inset:0;z-index:300;pointer-events:none;visibility:hidden}
-.mobile-nav.open{pointer-events:auto;visibility:visible}
-.mobile-nav-overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);opacity:0;transition:opacity .28s}
-.mobile-nav.open .mobile-nav-overlay{opacity:1}
-.mobile-nav-panel{position:absolute;top:0;left:0;bottom:0;width:min(290px,83vw);background:var(--bg2);border-right:1px solid var(--line);transform:translateX(-100%);transition:transform .28s var(--ease);display:flex;flex-direction:column;overflow-y:auto;z-index:1}
-.mobile-nav.open .mobile-nav-panel{transform:translateX(0)}
-.mobile-nav-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line);flex-shrink:0}
-.mobile-nav-close{width:34px;height:34px;border-radius:var(--r-sm);background:var(--bg4);display:flex;align-items:center;justify-content:center;color:var(--fg2);transition:background var(--t) var(--ease)}
-.mobile-nav-close:hover{background:var(--bg5);color:var(--fg)}
-.mobile-search-form{padding:12px 14px;border-bottom:1px solid var(--line);flex-shrink:0}
-.mobile-nav-links{display:flex;flex-direction:column;padding:8px;flex:1;gap:2px}
-.mobile-nav-links a{padding:10px 13px;border-radius:var(--r-sm);font-size:.88rem;font-weight:600;color:var(--fg2);display:flex;align-items:center;gap:9px;transition:background var(--t) var(--ease),color var(--t) var(--ease)}
-.mobile-nav-links a:hover{background:var(--bg4);color:var(--fg)}
-.mobile-nav-links a.active{background:rgba(124,111,239,.15);color:var(--accent,#7c6fef)}
-
-/* ── Footer ───────────────────────────────── */
-.footer{background:var(--bg2);border-top:1px solid var(--line);color:var(--fg2);padding:40px 0 0}
-.footer-inner{max-width:var(--w);margin:0 auto;padding:0 20px 32px;display:grid;grid-template-columns:1.6fr repeat(3,1fr);gap:36px}
-.footer-brand .nav-logo{font-size:1.05rem;margin-bottom:10px}
-.footer-desc{font-size:.79rem;color:var(--fg3);line-height:1.75;max-width:210px}
-.footer-heading{font-size:.67rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--fg);margin-bottom:14px}
-.footer-col ul{list-style:none}
-.footer-col ul li{margin-bottom:9px}
-.footer-col ul a{font-size:.8rem;color:var(--fg3);display:flex;align-items:center;gap:7px;transition:color var(--t) var(--ease)}
-.footer-col ul a:hover{color:var(--fg)}
-.footer-bottom{border-top:1px solid var(--line);padding:13px 20px;max-width:var(--w);margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
-.footer-copy{font-size:.73rem;color:var(--fg3)}
-.footer-legal{display:flex;gap:16px}
-.footer-legal a{font-size:.73rem;color:var(--fg3);transition:color var(--t) var(--ease)}
-.footer-legal a:hover{color:var(--fg)}
-
-/* ── Error Page ────────────────────────────── */
-.error-page{padding:80px 0}
-.error-content{text-align:center;max-width:480px;margin:0 auto}
-.error-icon{font-size:3.5rem;color:var(--fg3);margin-bottom:14px;opacity:.25}
-.error-title{font-size:5rem;font-weight:900;color:var(--fg);margin-bottom:8px;line-height:1;letter-spacing:-.06em}
-.error-subtitle{font-size:1.25rem;font-weight:800;margin-bottom:10px;color:var(--fg)}
-.error-desc{color:var(--fg2);margin-bottom:26px;font-size:.9rem}
-.error-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-
-/* ── Empty States ──────────────────────────── */
-.empty-state,.no-results{text-align:center;padding:52px 16px;color:var(--fg2)}
-.no-results-icon{font-size:2.8rem;margin-bottom:13px;opacity:.22}
-.empty-state i{font-size:2.8rem;margin-bottom:13px;display:block;opacity:.18}
-.no-results h2{font-size:1.05rem;font-weight:800;margin-bottom:8px;color:var(--fg)}
-.no-results p{font-size:.88rem;margin-bottom:16px}
-.no-results-actions{display:flex;gap:7px;justify-content:center;flex-wrap:wrap}
-
-/* ── Album Grid ────────────────────────────── */
-.album-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
-.album-thumb-btn{width:100%;cursor:pointer;background:none;border:none;padding:0;border-radius:var(--r-sm);overflow:hidden;display:block}
-.album-thumb{width:100%;height:auto;border-radius:var(--r-sm);transition:opacity .2s,transform .32s var(--ease);display:block}
-.album-thumb-btn:hover .album-thumb{opacity:.82;transform:scale(1.04)}
-
-/* ── Lightbox ──────────────────────────────── */
-.lightbox{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.93);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(12px)}
-.lightbox.hidden{display:none}
-.lightbox-content{position:relative;max-width:95vw;max-height:95vh;display:flex;flex-direction:column;align-items:center}
-.lightbox-image{max-width:100%;max-height:85vh;object-fit:contain;border-radius:var(--r-sm)}
-.lightbox-close{position:absolute;top:-46px;right:0;color:#fff;font-size:1.1rem;background:rgba(255,255,255,.1);backdrop-filter:blur(4px);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background var(--t)}
-.lightbox-close:hover{background:rgba(255,255,255,.2)}
-.lightbox-nav{display:flex;justify-content:space-between;width:100%;margin-top:13px}
-.lightbox-prev,.lightbox-next{color:#fff;background:rgba(255,255,255,.1);backdrop-filter:blur(4px);width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;transition:background var(--t)}
-.lightbox-prev:hover,.lightbox-next:hover{background:rgba(255,255,255,.2)}
-.lightbox-caption{color:rgba(255,255,255,.5);font-size:.8rem;text-align:center;margin-top:10px}
-
-/* ── Misc ──────────────────────────────────── */
-.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);background:var(--bg5);color:var(--fg);border:1px solid var(--line2);padding:9px 22px;border-radius:var(--r-pill);font-size:.83rem;font-weight:600;z-index:9999;pointer-events:none;animation:fadeUp .22s var(--ease);box-shadow:0 8px 24px rgba(0,0,0,.4)}
-@keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-#backToTop{position:fixed;bottom:80px;right:16px;z-index:180;width:40px;height:40px;border-radius:50%;background:var(--accent,#7c6fef);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(124,111,239,.45);transition:opacity .3s,visibility .3s,transform var(--t) var(--ease);font-size:.82rem;opacity:0;visibility:hidden}
-#backToTop:hover{transform:scale(1.1) translateY(-2px)}
-.connection-status{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#ef4444;color:#fff;padding:8px 20px;border-radius:var(--r-pill);font-size:.79rem;display:flex;align-items:center;gap:7px;z-index:400;box-shadow:0 4px 16px rgba(239,68,68,.4)}
-.content-desc{margin:12px 0}
-.full-desc.hidden{display:none}
-.read-more{font-size:.79rem;color:var(--accent,#7c6fef);margin-top:4px;text-decoration:underline;cursor:pointer;font-weight:700}
-.static-content h2{font-size:1.15rem;font-weight:800;margin:22px 0 11px;color:var(--fg)}
-.static-content p,.static-content li{margin-bottom:10px;line-height:1.8;color:var(--fg2)}
-.static-content ul,.static-content ol{padding-left:20px;margin-bottom:12px}
-.static-content address{font-style:normal}
-.static-content a{color:var(--accent,#7c6fef);text-decoration:underline}
-
-/* ── Responsive ────────────────────────────── */
-@media(min-width:768px) and (max-width:1024px){
-  .layout-main{grid-template-columns:1fr 248px;gap:20px}
-  .content-grid{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
-  .view-layout{grid-template-columns:1fr 268px}
-  .footer-inner{grid-template-columns:1fr 1fr;gap:24px}
-  .footer-brand{grid-column:1/-1}
-}
-@media(max-width:767px){
-  /* Navbar mobile */
-  :root{--nav-h:52px}
-  .nav-links{display:none}
-  .nav-menu-btn{display:flex;flex-shrink:0;z-index:999999!important;position:relative!important;pointer-events:auto!important;opacity:1!important;visibility:visible!important;cursor:pointer!important}
-  .mobile-nav:not(.open) .mobile-nav-overlay{display:none!important;pointer-events:none!important}
-  .nav-inner{gap:8px;padding:0 12px 0 12px;overflow:visible!important}
-  .nav-logo{font-size:1rem}
-  .nav-search{
-    flex:1;
-    max-width:none;
-    min-width:0;
-    margin-left:0;
-    z-index:0
-  }
-  .nav-search input{
-    font-size:.8rem;
-    padding:6px 10px 6px 28px
-  }
-  .nav-search-icon{left:9px;font-size:.72rem}
-
-  /* Bottom nav mobile */
-  .bottom-nav{display:flex}
-  .bottom-nav-inner{display:flex;width:100%}
-  .bottom-nav-item{
-    flex:1;
-    min-width:0;
-    padding:6px 2px;
-    min-height:50px;
-    font-size:.52rem;
-    gap:2px
-  }
-  .bottom-nav-item i{font-size:.95rem}
-  .bottom-nav-item span{
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    max-width:100%;
-    display:block;
-    text-align:center
-  }
-
-  /* Layout */
-  body{padding-bottom:calc(52px + env(safe-area-inset-bottom,0))}
-  .layout-main{grid-template-columns:1fr;gap:0;padding:0 0 80px}
-  .content-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
-  .sidebar{display:none}
-  .trending-mobile-section{display:block}
-  .page-title{font-size:1.25rem}
-  .page-header,.tag-header{padding:16px 0 14px}
-  .view-layout{grid-template-columns:1fr;padding:0 0 80px;gap:0}
-  .view-content{padding:10px 14px 0}
-  .view-sidebar{padding:0 14px 16px}
-  .content-title{font-size:1.1rem}
-  .player-wrapper{border-radius:0;margin-bottom:10px}
-  .footer-inner{grid-template-columns:1fr 1fr;gap:20px}
-  .footer-brand{grid-column:1/-1}
-  .footer-bottom{flex-direction:column;text-align:center;gap:5px}
-  .footer-legal{justify-content:center}
-  .footer{padding-bottom:calc(70px + env(safe-area-inset-bottom,0))}
-  #backToTop{bottom:80px;right:12px;width:36px;height:36px;font-size:.75rem}
-  .album-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
-  .toast{bottom:68px}
-  .card-title{font-size:.79rem}
-}
-@media(min-width:480px) and (max-width:767px){
-  .content-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
-}
-@media(max-width:380px){
-  .container{padding:0 12px}
-  .content-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
-  .footer-inner{grid-template-columns:1fr}
-}
-</style>`;
+  // criticalCss is now handled by getUniqueTheme(cfg) which is called separately
+  const criticalCss = getUniqueTheme(cfg);
 
   const dapurDomain = (cfg._env?.DAPUR_BASE_URL||'https://dapur.dukunseo.com').replace(/https?:\/\//,'').split('/')[0];
   const csp = [
@@ -1706,8 +1679,7 @@ ${lcpPreload}${prevLink}${nextLink}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 ${criticalCss}
-<link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"></noscript>
+${cfg.THEME_FONT && cfg.THEME_FONT!=='Inter' && !cfg.THEME_FONT.includes('system') ? `<link rel="preload" href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(cfg.THEME_FONT)}:wght@400;600;700;800;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(cfg.THEME_FONT)}:wght@400;600;700;800;900&display=swap"></noscript>` : ''}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <link rel="icon" href="${urlHelper('assets/favicon.ico',cfg)}" type="image/x-icon">
 <link rel="apple-touch-icon" sizes="180x180" href="${urlHelper('assets/apple-touch-icon.png',cfg)}">
@@ -1721,125 +1693,229 @@ ${extraHead}
 
 function renderNavHeader({ cfg, currentPage='', q='', isHome=false }) {
   const nameParts = cfg.WARUNG_NAME.split(' ');
-  const logo = h(nameParts[0])+(nameParts[1]?`<span>${h(nameParts.slice(1).join(' '))}</span>`:'');
-  const navItems = getNavItems(cfg);
-  const navLinksHtml = navItems.map(item=>`<li><a href="${item.url}"><i class="fas ${item.icon}" aria-hidden="true"></i> ${item.label}</a></li>`).join('\n');
-  const mobileNavLinksHtml = navItems.map(item=>`<a href="${item.url}"><i class="fas ${item.icon}" aria-hidden="true"></i> ${item.label}</a>`).join('\n');
-  const bottomNavItems = [
-    { url:homeUrl(cfg), icon:'fa-home', label:'Beranda', key:'home' },
-    ...navItems.map(item=>({ url:item.url, icon:item.icon, label:item.label, key:item.label.toLowerCase() })),
-    { url:searchUrl('',cfg), icon:'fa-search', label:'Cari', key:'search' },
-  ];
-  const bottomNavHtml = bottomNavItems.map(item=>`<a href="${item.url}" class="bottom-nav-item${currentPage===item.key||(isHome&&item.key==='home')?' active':''}" aria-label="${item.label}"><i class="fas ${item.icon}" aria-hidden="true"></i><span>${item.label}</span></a>`).join('');
+  const logo = h(nameParts[0]) + (nameParts[1] ? `<span>${h(nameParts.slice(1).join(' '))}</span>` : '');
+  
   return `<body>
-<a href="#main-content" class="skip-link">Langsung ke konten utama</a>
-<header>
-<nav class="nav" aria-label="Menu utama">
-  <div class="nav-inner">
-    <a href="${homeUrl(cfg)}" class="nav-logo" aria-label="${h(cfg.WARUNG_NAME)} — Beranda">${logo}</a>
-    <ul class="nav-links" role="list" aria-label="Navigasi utama">
-      <li><a href="${homeUrl(cfg)}" class="${isHome?'active':''}" ${isHome?'aria-current="page"':''}><i class="fas fa-home" aria-hidden="true"></i> Beranda</a></li>
-      ${navLinksHtml}
-    </ul>
-    <form class="nav-search" role="search" action="${searchUrl('',cfg)}" method="get" aria-label="Cari konten">
-      <label for="nav-search-input" class="sr-only">Cari konten</label>
-      <i class="fas fa-search nav-search-icon" aria-hidden="true"></i>
-      <input id="nav-search-input" type="search" name="q" placeholder="Cari..." value="${h(q)}" autocomplete="off" aria-label="Kata kunci pencarian" maxlength="100">
-      <button type="submit" class="sr-only">Cari</button>
-    </form>
-    <button class="nav-menu-btn" aria-label="Buka menu navigasi" aria-expanded="false" aria-controls="mobileNav" id="menuBtn"><i class="fas fa-bars" aria-hidden="true"></i></button>
-  </div>
-</nav>
-</header>
-<nav class="bottom-nav" aria-label="Navigasi bawah"><div class="bottom-nav-inner">${bottomNavHtml}</div></nav>
-<div class="mobile-nav" id="mobileNav" role="dialog" aria-modal="true" aria-label="Menu navigasi mobile">
-  <div class="mobile-nav-overlay" id="mobileNavOverlay" aria-hidden="true"></div>
-  <div class="mobile-nav-panel">
-    <div class="mobile-nav-header">
-      <span class="nav-logo">${h(cfg.WARUNG_NAME)}</span>
-      <button id="mobileNavClose" class="mobile-nav-close" aria-label="Tutup menu"><i class="fas fa-times" aria-hidden="true"></i></button>
+<!-- MODAL MENU -->
+<div class="modal-overlay" id="modalMenu">
+  <div class="modal-inner">
+    <div class="modal-head">
+      <a href="${homeUrl(cfg)}" class="logo">${logo}</a>
+      <button class="modal-close" id="closeModal"><i class="fas fa-times"></i></button>
     </div>
-    <form role="search" action="${searchUrl('',cfg)}" method="get" class="mobile-search-form">
-      <div class="search-bar">
-        <label for="mobile-search-input" class="sr-only">Cari konten</label>
-        <input id="mobile-search-input" type="search" name="q" placeholder="Cari konten..." value="${h(q)}">
-        <button type="submit" aria-label="Cari"><i class="fas fa-search" aria-hidden="true"></i></button>
-      </div>
-    </form>
-    <nav class="mobile-nav-links" aria-label="Navigasi mobile">
-      <a href="${homeUrl(cfg)}" class="${isHome?'active':''}">${isHome?'aria-current="page"':''}<i class="fas fa-home" aria-hidden="true"></i> Beranda</a>
-      ${mobileNavLinksHtml}
-    </nav>
+    <ul class="modal-nav">
+      <li><a href="${homeUrl(cfg)}"><i class="fas fa-home"></i> Home</a></li>
+      <li><a href="${homeUrl(cfg)}?trending=1"><i class="fas fa-fire"></i> Trending</a></li>
+      <li><a href="${homeUrl(cfg)}?sort=newest"><i class="fas fa-star"></i> Terbaru</a></li>
+      <li><a href="${categoryUrl('video', 1, cfg)}"><i class="fas fa-video"></i> Videos</a></li>
+      <li><a href="${categoryUrl('album', 1, cfg)}"><i class="fas fa-image"></i> Photos</a></li>
+      <li><a href="/${cfg.PATH_SEARCH}"><i class="fas fa-search"></i> Cari</a></li>
+      <li><a href="/${cfg.PATH_DMCA}"><i class="fas fa-shield-alt"></i> DMCA</a></li>
+      <li><a href="/${cfg.PATH_CONTACT}"><i class="fas fa-envelope"></i> Kontak</a></li>
+    </ul>
   </div>
-</div>`;
+</div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-container">
+    <button class="menu-btn" id="menuBtn" aria-label="Menu"><i class="fas fa-bars"></i></button>
+    <a href="${homeUrl(cfg)}" class="logo">${logo}</a>
+    <div class="search-bar">
+      <input type="text" placeholder="Cari video..." id="navSearchInput" value="${h(q)}">
+      <button type="button" id="navSearchBtn" aria-label="Cari"><i class="fas fa-search"></i></button>
+    </div>
+  </div>
+</header>
+
+<!-- CATEGORIES STRIP -->
+<nav class="categories">
+  <div class="categories-inner" id="catList">
+    <a class="cat ${!currentPage || currentPage==='home' || isHome ? 'active' : ''}" href="${homeUrl(cfg)}">Semua</a>
+    <a class="cat ${currentPage==='trending' ? 'active' : ''}" href="${homeUrl(cfg)}?trending=1">🔥 Trending</a>
+    <a class="cat ${currentPage==='latest' ? 'active' : ''}" href="${homeUrl(cfg)}?sort=newest">✨ Terbaru</a>
+    <a class="cat ${currentPage==='popular' ? 'active' : ''}" href="${homeUrl(cfg)}?sort=popular">👑 Popular</a>
+    <a class="cat" href="${categoryUrl('video', 1, cfg)}">🎬 Video</a>
+    <a class="cat" href="${categoryUrl('album', 1, cfg)}">📷 Album</a>
+    <a class="cat" href="/${cfg.PATH_TAG}/indonesia">🇮🇩 Indonesia</a>
+    <a class="cat" href="/${cfg.PATH_TAG}/korea">🇰🇷 Korea</a>
+    <a class="cat" href="/${cfg.PATH_TAG}/japan">🇯🇵 Japan</a>
+  </div>
+</nav>`;
 }
 
 function renderFooter(cfg, request=null, nonce='') {
-  const year      = new Date().getFullYear();
-  const nameParts = cfg.WARUNG_NAME.split(' ');
-  const footerLogo= h(nameParts[0])+(nameParts[1]?`<span>${h(nameParts.slice(1).join(' '))}</span>`:'');
+  const year = new Date().getFullYear();
+  
   return `${renderBanner('footer_top', cfg, request, nonce)}
-<footer class="footer" role="contentinfo">
-  <div class="footer-inner">
-    <div class="footer-brand">
-      <div class="nav-logo footer-logo">${footerLogo}</div>
-      <p class="footer-desc">${h(cfg.WARUNG_TAGLINE)}</p>
-    </div>
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-grid">
     <div class="footer-col">
-      <h3 class="footer-heading">Kategori</h3>
-      <ul role="list">${getNavItems(cfg).map(item=>`<li><a href="${item.url}"><i class="fas ${item.icon}" aria-hidden="true"></i> ${item.label}</a></li>`).join('')}</ul>
-    </div>
-    <div class="footer-col">
-      <h3 class="footer-heading">Informasi</h3>
-      <ul role="list">
-        <li><a href="/${cfg.PATH_ABOUT}"><i class="fas fa-info-circle" aria-hidden="true"></i> Tentang Kami</a></li>
-        <li><a href="/${cfg.PATH_CONTACT}"><i class="fas fa-envelope" aria-hidden="true"></i> Hubungi Kami</a></li>
-        <li><a href="/${cfg.PATH_FAQ}"><i class="fas fa-question-circle" aria-hidden="true"></i> FAQ</a></li>
-        <li><a href="/sitemap.xml" rel="nofollow"><i class="fas fa-sitemap" aria-hidden="true"></i> Sitemap</a></li>
+      <h4>${h(cfg.WARUNG_NAME)}</h4>
+      <ul>
+        <li><a href="/${cfg.PATH_ABOUT}">About Us</a></li>
+        <li><a href="/${cfg.PATH_CONTACT}">Contact</a></li>
+        <li><a href="/${cfg.PATH_DMCA}">DMCA</a></li>
+        <li><a href="/${cfg.PATH_TERMS}">Terms</a></li>
       </ul>
     </div>
     <div class="footer-col">
-      <h3 class="footer-heading">Legal</h3>
-      <ul role="list">
-        <li><a href="/${cfg.PATH_TERMS}"><i class="fas fa-file-contract" aria-hidden="true"></i> Syarat &amp; Ketentuan</a></li>
-        <li><a href="/${cfg.PATH_PRIVACY}"><i class="fas fa-lock" aria-hidden="true"></i> Kebijakan Privasi</a></li>
-        <li><a href="/${cfg.PATH_DMCA}"><i class="fas fa-copyright" aria-hidden="true"></i> DMCA</a></li>
+      <h4>Kategori</h4>
+      <ul>
+        <li><a href="${categoryUrl('video', 1, cfg)}">Videos</a></li>
+        <li><a href="${categoryUrl('album', 1, cfg)}">Photos</a></li>
+        <li><a href="/${cfg.PATH_SEARCH}">Cari</a></li>
+        <li><a href="/${cfg.PATH_TAG}">Tags</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Negara</h4>
+      <ul>
+        <li><a href="/${cfg.PATH_TAG}/indonesia">Indonesia</a></li>
+        <li><a href="/${cfg.PATH_TAG}/korea">Korea</a></li>
+        <li><a href="/${cfg.PATH_TAG}/japan">Japan</a></li>
+        <li><a href="/${cfg.PATH_TAG}/barat">Barat</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Follow</h4>
+      <ul>
+        <li><a href="#"><i class="fab fa-twitter"></i> Twitter</a></li>
+        <li><a href="#"><i class="fab fa-telegram"></i> Telegram</a></li>
+        <li><a href="#"><i class="fab fa-instagram"></i> Instagram</a></li>
       </ul>
     </div>
   </div>
-  <div class="footer-bottom">
-    <p class="footer-copy"><small>&copy; ${year} ${h(cfg.WARUNG_NAME)}. Hak cipta dilindungi.</small></p>
-    <nav class="footer-legal" aria-label="Tautan legal">
-      <a href="/${cfg.PATH_PRIVACY}">Privasi</a>
-      <a href="/${cfg.PATH_DMCA}">DMCA</a>
-      <a href="/${cfg.PATH_CONTACT}">Kontak</a>
-    </nav>
-  </div>
+  <div class="footer-copy">© ${year} ${h(cfg.WARUNG_NAME)} • 18+ Only</div>
 </footer>
-<script nonce="${generateNonce()}">
-(function(){'use strict';
-function getEl(id,sel){return document.getElementById(id)||document.querySelector(sel);}
-window.toggleMobileNav=function(){const nav=getEl('mobileNav','.mobile-nav'),btn=getEl('menuBtn','.nav-menu-btn');if(!nav)return;const open=nav.classList.contains('open');nav.classList.toggle('open',!open);if(btn)btn.setAttribute('aria-expanded',String(!open));document.body.style.overflow=!open?'hidden':'';if(!open){const f=nav.querySelector('input[type=search]');if(f)setTimeout(()=>f.focus(),150);}};
-window.closeMobileNav=function(){const nav=getEl('mobileNav','.mobile-nav'),btn=getEl('menuBtn','.nav-menu-btn');if(!nav||!nav.classList.contains('open'))return;nav.classList.remove('open');if(btn)btn.setAttribute('aria-expanded','false');document.body.style.overflow='';};
-function bindEvents(){
-  const btn=getEl('menuBtn','.nav-menu-btn'),overlay=getEl('mobileNavOverlay','.mobile-nav-overlay'),closeBtn=getEl('mobileNavClose','.mobile-nav-close'),btt=getEl('backToTop','#backToTop');
-  if(btn){btn.removeEventListener('click',window.toggleMobileNav);btn.addEventListener('click',window.toggleMobileNav);}
-  else{document.querySelectorAll('.nav-menu-btn').forEach(b=>b.addEventListener('click',window.toggleMobileNav));}
-  if(overlay)overlay.addEventListener('click',window.closeMobileNav);
-  if(closeBtn)closeBtn.addEventListener('click',window.closeMobileNav);
-  if(btt)btt.addEventListener('click',function(){window.scrollTo({top:0,behavior:'smooth'});});
-}
-document.addEventListener('keydown',function(e){if(e.key==='Escape')window.closeMobileNav();});
-try{const path=location.pathname,base='${cfg.WARUNG_BASE_PATH}',clean=path.startsWith(base)?path.slice(base.length):path;document.querySelectorAll('.nav-links a,.mobile-nav-links a').forEach(a=>{const href=a.getAttribute('href')||'';if(href==='/'||href===base+'/'){if(clean==='/'||clean===''||clean===base)a.classList.add('active');}else if(href!=='#'&&clean.startsWith(href)&&href.length>1)a.classList.add('active');});}catch(e){console.warn('[Nav] active highlight failed:',e);}
-window.addEventListener('scroll',function(){const btn=getEl('backToTop','#backToTop');if(btn){const s=window.scrollY>400;btn.style.opacity=s?'1':'0';btn.style.visibility=s?'visible':'hidden';}},{passive:true});
-document.addEventListener('DOMContentLoaded',function(){const btt=getEl('backToTop','#backToTop');if(btt){btt.style.opacity='0';btt.style.visibility='hidden';}bindEvents();});
-window.addEventListener('load',function(){setTimeout(bindEvents,100);});
-window.debugNav=function(){console.log({menuBtn:getEl('menuBtn','.nav-menu-btn'),mobileNav:getEl('mobileNav','.mobile-nav'),toggleFn:typeof window.toggleMobileNav});};
-if(document.readyState!=='loading')bindEvents();
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <a class="bn-item active" href="${homeUrl(cfg)}">
+    <div class="bn-icon-wrap"><i class="fas fa-home"></i></div>
+    <span>Home</span>
+  </a>
+  <a class="bn-item" href="${homeUrl(cfg)}?trending=1">
+    <div class="bn-icon-wrap"><i class="fas fa-fire"></i><span class="dot"></span></div>
+    <span>Trending</span>
+  </a>
+  <a class="bn-item" href="${categoryUrl('video', 1, cfg)}">
+    <div class="bn-icon-wrap"><i class="fas fa-video"></i></div>
+    <span>Videos</span>
+  </a>
+  <a class="bn-item" href="${categoryUrl('album', 1, cfg)}">
+    <div class="bn-icon-wrap"><i class="fas fa-image"></i></div>
+    <span>Photos</span>
+  </a>
+  <a class="bn-item" href="/profile">
+    <div class="bn-icon-wrap"><i class="fas fa-user"></i></div>
+    <span>Profile</span>
+  </a>
+</nav>
+
+<script nonce="${nonce}">
+(function() {
+  'use strict';
+  
+  // Modal menu
+  const menuBtn = document.getElementById('menuBtn');
+  const modalMenu = document.getElementById('modalMenu');
+  const closeModal = document.getElementById('closeModal');
+  
+  if (menuBtn && modalMenu) {
+    menuBtn.addEventListener('click', () => {
+      modalMenu.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    });
+  }
+  
+  if (closeModal && modalMenu) {
+    closeModal.addEventListener('click', () => {
+      modalMenu.classList.remove('show');
+      document.body.style.overflow = '';
+    });
+  }
+  
+  if (modalMenu) {
+    // Klik overlay tutup modal
+    modalMenu.addEventListener('click', (e) => {
+      if (e.target === modalMenu) {
+        modalMenu.classList.remove('show');
+        document.body.style.overflow = '';
+      }
+    });
+    // Klik link di dalam modal → tutup modal dulu lalu navigasi
+    modalMenu.querySelectorAll('.modal-nav a').forEach(link => {
+      link.addEventListener('click', () => {
+        modalMenu.classList.remove('show');
+        document.body.style.overflow = '';
+      });
+    });
+  }
+  
+  // Close modal with Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modalMenu?.classList.contains('show')) {
+      modalMenu.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+  });
+  
+  // Search functionality
+  const doNavSearch = function() {
+    const q = document.getElementById('navSearchInput')?.value.trim();
+    if (q) {
+      window.location.href = '/${cfg.PATH_SEARCH}?q=' + encodeURIComponent(q);
+    }
+  };
+  
+  document.getElementById('navSearchBtn')?.addEventListener('click', doNavSearch);
+  document.getElementById('navSearchInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') doNavSearch();
+  });
+  
+  // Category strip click handler
+  document.getElementById('catList')?.addEventListener('click', (e) => {
+    const cat = e.target.closest('.cat');
+    if (!cat) return;
+    document.querySelectorAll('.cat').forEach(c => c.classList.remove('active'));
+    cat.classList.add('active');
+  });
+  
+  // Back to top button
+  const backToTop = document.createElement('button');
+  backToTop.id = 'backToTop';
+  backToTop.innerHTML = '<i class="fas fa-chevron-up"></i>';
+  backToTop.setAttribute('aria-label', 'Kembali ke atas');
+  backToTop.style.cssText = 'position:fixed;bottom:80px;right:10px;z-index:99;width:36px;height:36px;border-radius:8px;background:var(--gold);color:#000;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;visibility:hidden;transition:opacity .3s,visibility .3s;';
+  
+  backToTop.addEventListener('click', () => {
+    window.scrollTo({ top:0, behavior:'smooth' });
+  });
+  
+  document.body.appendChild(backToTop);
+  
+  window.addEventListener('scroll', () => {
+    const shouldShow = window.scrollY > 400;
+    backToTop.style.opacity = shouldShow ? '1' : '0';
+    backToTop.style.visibility = shouldShow ? 'visible' : 'hidden';
+  }, { passive: true });
+  
+  // Set active bottom nav link based on current URL
+  try {
+    const path = window.location.pathname + window.location.search;
+    document.querySelectorAll('.bn-item').forEach(link => {
+      const href = link.getAttribute('href');
+      if (href && (path === href || (href !== '/' && path.startsWith(href.split('?')[0])))) {
+        document.querySelectorAll('.bn-item').forEach(i => i.classList.remove('active'));
+        link.classList.add('active');
+      }
+    });
+  } catch (e) {}
 })();
 <\/script>
 <div id="connectionStatus" class="connection-status" role="status" aria-live="polite" style="display:none"><i class="fas fa-wifi" aria-hidden="true"></i><span>Koneksi terputus...</span></div>
-<button id="backToTop" aria-label="Kembali ke atas"><i class="fas fa-chevron-up" aria-hidden="true"></i></button>
 </body></html>`;
 }
 
@@ -1848,62 +1924,67 @@ if(document.readyState!=='loading')bindEvents();
 // ═══════════════════════════════════════════════════════════════════════
 
 function renderCard(item, cfg, index=99) {
-  const icon=TYPE_ICONS[item.type]||'fa-file';
-  const typeLabel=TYPE_META[item.type]?.label||ucfirst(item.type||'');
-  const durationBadge=item.type==='video'&&item.duration>0?`<span class="badge-duration">${formatDuration(item.duration)}</span>`:'';
-  const isAboveFold=index<4;
+  const durationBadge=item.type==='video'&&item.duration>0?`<span class="badge-dur">${formatDuration(item.duration)}</span>`:'';
   const thumbUrl=safeThumb(item,cfg);
   const srcset=`${h(thumbUrl)}?w=320 320w, ${h(thumbUrl)}?w=640 640w`;
+  const isAboveFold=index<4;
   const imgAttrs=isAboveFold?`loading="eager" fetchpriority="high" decoding="async"`:`loading="lazy" decoding="async"`;
   const iUrl=item.type==='album'?albumUrl(item.id,item.title,cfg):contentUrl(item.id,item.title,cfg);
   const shortTitle=mbSubstr(item.title,0,60);
-  const schemaType={'video':'https://schema.org/VideoObject','album':'https://schema.org/ImageGallery'}[item.type]||'https://schema.org/CreativeWork';
-  return `<article class="card" itemscope itemtype="${schemaType}">
-  <a href="${h(iUrl)}" aria-label="${h(shortTitle)} — ${typeLabel}" itemprop="url">
-    <div class="card-thumb" style="aspect-ratio:16/9">
-      <img src="${h(thumbUrl)}" srcset="${srcset}" sizes="(max-width:480px) 320px, 640px" alt="${h(shortTitle)}" ${imgAttrs} width="320" height="180" onerror="this.src='${h(cfg.DEFAULT_THUMB)}'" itemprop="image">
+  
+  // Badge HOT dan QUAL
+  const hotBadge=index%6===0&&cfg.THEME_BADGE_HOT?`<span class="badge-hot">${h(cfg.THEME_BADGE_HOT)}</span>`:'';
+  const qualBadge=item.quality?`<span class="badge-qual">${h(item.quality)}</span>`:'<span class="badge-qual">HD</span>';
+  
+  // Meta data
+  const views = formatViews(item.views||0);
+  const timeAgo = item.created_at ? formatDate(item.created_at) : '';
+  
+  return `<a class="v-card" href="${h(iUrl)}">
+    <div class="v-img">
+      <img src="${h(thumbUrl)}" srcset="${srcset}" sizes="(max-width:480px) 320px, 640px" alt="${h(shortTitle)}" ${imgAttrs} width="320" height="180" onerror="this.src='${h(cfg.DEFAULT_THUMB)}'">
+      ${hotBadge}
+      ${qualBadge}
       ${durationBadge}
-      <span class="badge-type" aria-label="${typeLabel}"><i class="fas ${icon}" aria-hidden="true"></i></span>
     </div>
-    <div class="card-info">
-      <h3 class="card-title" itemprop="name">${h(shortTitle)}</h3>
-      <div class="card-meta">
-        <span><i class="fas fa-eye" aria-hidden="true"></i> ${formatViews(item.views)}</span>
-        <span><time datetime="${isoDate(item.created_at)}" itemprop="datePublished"><i class="fas fa-calendar-alt" aria-hidden="true"></i> ${formatDate(item.created_at)}</time></span>
+    <div class="v-info">
+      <div class="v-title">${h(shortTitle)}</div>
+      <div class="v-meta">
+        <span><i class="fas fa-eye"></i>${views}</span>
+        ${timeAgo?`<span><i class="fas fa-clock"></i>${timeAgo}</span>`:''}
       </div>
     </div>
-  </a>
-</article>`;
+  </a>`;
 }
 
 function renderGrid(items, cfg, midBannerEnabled=true, request=null, nonce='') {
-  let html='<ul class="content-grid" aria-label="Daftar konten">';
-  items.forEach((item,i) => { html+=`<li>${renderCard(item,cfg,i)}</li>`; if (midBannerEnabled) html+=renderBannerMidGrid(i,cfg,request,nonce); });
-  html+='</ul>';
+  let html='<div class="v-grid">';
+  items.forEach((item,i) => { 
+    html+=renderCard(item,cfg,i); 
+    if (midBannerEnabled && i%6===5) html+=renderBannerMidGrid(i,cfg,request,nonce);
+  });
+  html+='</div>';
   return html;
 }
 
 function renderPagination(pagination, buildUrl) {
   if (!pagination) return '';
-  // FIX: Hitung total_pages dari total+per_page jika API tidak mengembalikannya
-  const perPage = pagination.per_page || pagination.limit || 24;
-  const totalItems = pagination.total || 0;
-  const totalPages = pagination.total_pages
-    || (totalItems && perPage ? Math.ceil(totalItems / perPage) : 1);
-  if (totalPages <= 1) return '';
-  const page = pagination.current_page || 1;
-  // FIX: Hitung has_prev/has_next jika tidak ada dari API
-  const hasPrev = (pagination.has_prev !== undefined) ? pagination.has_prev : (page > 1);
-  const hasNext = (pagination.has_next !== undefined) ? pagination.has_next : (page < totalPages);
+  // Normalisasi field — support: total_pages, last_page, pageCount
+  const page  = pagination.current_page || pagination.page || 1;
+  const total = pagination.total_pages  || pagination.last_page || pagination.pageCount || 1;
+  if (total <= 1) return '';
+  // Fallback has_prev/has_next kalau API tidak return field ini
+  const hasPrev = pagination.has_prev !== undefined ? pagination.has_prev : page > 1;
+  const hasNext = pagination.has_next !== undefined ? pagination.has_next : page < total;
   let html=`<nav class="pagination" aria-label="Navigasi halaman">`;
   if (hasPrev) html+=`<a href="${buildUrl(page-1)}" class="page-btn" rel="prev"><i class="fas fa-chevron-left" aria-hidden="true"></i> Sebelumnya</a>`;
   html+='<div class="page-numbers">';
   const showPages=[];
-  if (totalPages<=7) { for (let p=1;p<=totalPages;p++) showPages.push(p); }
+  if (total<=7) { for (let p=1;p<=total;p++) showPages.push(p); }
   else {
     showPages.push(1); if (page>3) showPages.push('…');
-    for (let p=Math.max(2,page-1);p<=Math.min(totalPages-1,page+1);p++) showPages.push(p);
-    if (page<totalPages-2) showPages.push('…'); showPages.push(totalPages);
+    for (let p=Math.max(2,page-1);p<=Math.min(total-1,page+1);p++) showPages.push(p);
+    if (page<total-2) showPages.push('…'); showPages.push(total);
   }
   showPages.forEach(p=>{
     if (p==='…') html+=`<span class="page-ellipsis">…</span>`;
@@ -1915,42 +1996,32 @@ function renderPagination(pagination, buildUrl) {
   return html;
 }
 
-function renderTrendingWidget(trending, cfg) {
-  if (!trending?.length) return '';
-  return `<aside class="widget widget--trending" aria-label="Konten trending">
-<h2 class="widget-title"><i class="fas fa-fire" aria-hidden="true"></i> Trending</h2>
-<ol class="trending-list">
-${trending.map((item,i)=>`<li class="trending-item">
-  <a href="${h(itemUrl(item,cfg))}" aria-label="${h(mbSubstr(item.title,0,45))}">
-    <span class="trending-num">${i+1}</span>
-    <img src="${h(safeThumb(item,cfg))}" alt="" loading="lazy" width="80" height="45">
-    <div class="trending-info"><p>${h(mbSubstr(item.title,0,45))}</p><small><i class="fas fa-eye"></i> ${formatViews(item.views)}</small></div>
-  </a>
-</li>`).join('')}
-</ol></aside>`;
-}
 
 function renderTrendingMobile(trending, cfg) {
   if (!trending?.length) return '';
-  return `<section class="trending-mobile-section" aria-label="Trending">
-<div class="trending-mobile-header"><i class="fas fa-fire" aria-hidden="true"></i> Trending</div>
-<div class="trending-scroll">
-${trending.slice(0,10).map((item,i)=>`<div class="trending-scroll-item">
-  <a href="${h(itemUrl(item,cfg))}">
-    <div class="t-thumb"><img src="${h(safeThumb(item,cfg))}" alt="" loading="lazy" width="130" height="73"><span class="t-num">${i+1}</span></div>
-    <p class="t-title">${h(mbSubstr(item.title,0,40))}</p>
-  </a>
-</div>`).join('')}
-</div></section>`;
+  
+  return `<div class="trending-strip">
+    <div class="trending-inner">
+      ${trending.slice(0,8).map((item,i)=>`
+        <a class="t-card" href="${h(itemUrl(item,cfg))}">
+          <div class="t-img">
+            <img src="${h(safeThumb(item,cfg))}" alt="" loading="lazy" width="140" height="79">
+            <span class="t-num">${i+1}</span>
+            <span class="t-dur">${item.duration ? formatDuration(item.duration) : ''}</span>
+          </div>
+          <div class="t-info">
+            <div class="t-title">${h(mbSubstr(item.title,0,40))}</div>
+          </div>
+        </a>
+      `).join('')}
+    </div>
+  </div>`;
 }
 
 function renderBreadcrumb(items, cfg) {
   return `<nav class="breadcrumb" aria-label="Breadcrumb">
 <ol itemscope itemtype="https://schema.org/BreadcrumbList">
-${items.map((item,i)=>`<li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
-${item.url?`<a href="${h(item.url)}" itemprop="item"><span itemprop="name">${h(item.name)}</span></a>`:`<span itemprop="name" aria-current="page">${h(item.name)}</span>`}
-<meta itemprop="position" content="${i+1}">
-${i<items.length-1?`</li><li aria-hidden="true"><i class="fas fa-chevron-right"></i>`:''}</li>`).join('\n')}
+${items.map((item,i)=>`<li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">${item.url?`<a href="${h(item.url)}" itemprop="item"><span itemprop="name">${h(item.name)}</span></a>`:`<span itemprop="name" aria-current="page">${h(item.name)}</span>`}<meta itemprop="position" content="${i+1}">${i<items.length-1?`<i class="fas fa-chevron-right bc-sep" aria-hidden="true"></i>`:''}</li>`).join('\n')}
 </ol></nav>`;
 }
 
@@ -1960,7 +2031,8 @@ ${i<items.length-1?`</li><li aria-hidden="true"><i class="fas fa-chevron-right">
 
 async function handle404(cfg, seo, request) {
   const canonical=seo.canonical('/404');
-  const head=renderHead({ title:'404 - Halaman Tidak Ditemukan | '+cfg.WARUNG_NAME, desc:'Halaman yang kamu cari tidak ditemukan di '+cfg.WARUNG_NAME+'.', canonical, ogImage:cfg.SEO_OG_IMAGE, ogType:'website', noindex:true, cfg, seo, request, extraHead:getUniqueTheme(cfg) });
+  const footNonce=generateNonce();
+  const head=renderHead({ title:'404 - Halaman Tidak Ditemukan | '+cfg.WARUNG_NAME, desc:'Halaman yang kamu cari tidak ditemukan di '+cfg.WARUNG_NAME+'.', canonical, ogImage:cfg.SEO_OG_IMAGE, ogType:'website', noindex:true, cfg, seo, request, extraHead:'', extraNonces:[footNonce] });
   const nav=renderNavHeader({cfg});
   const body=`<main id="main-content"><section class="error-page"><div class="container"><div class="error-content">
   <div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>
@@ -1969,67 +2041,72 @@ async function handle404(cfg, seo, request) {
   <p class="error-desc">URL yang Anda kunjungi tidak ada atau sudah dihapus.</p>
   <div class="error-actions"><a href="${homeUrl(cfg)}" class="btn btn-primary"><i class="fas fa-home"></i> Beranda</a><a href="${searchUrl('',cfg)}" class="btn btn-outline"><i class="fas fa-search"></i> Cari</a></div>
 </div></div></section></main>`;
-  return new Response(head+nav+body+renderFooter(cfg,request,''), { status:404, headers:htmlHeaders(cfg,'page') });
+  return new Response(head+nav+body+renderFooter(cfg,request,footNonce), { status:404, headers:htmlHeaders(cfg,'page') });
 }
 
 async function handleHome(request, cfg, client, seo) {
   const url=new URL(request.url);
   const page=Math.max(1, parseInt(url.searchParams.get('page')||'1'));
   const type=getContentTypes(cfg).includes(url.searchParams.get('type')||'') ? url.searchParams.get('type') : '';
+  const sortParam=url.searchParams.get('sort')||'';
+  const isTrending=url.searchParams.has('trending')||url.searchParams.get('trending')==='1';
+  const sortOrder = isTrending ? 'popular' : (['newest','popular','views'].includes(sortParam) ? sortParam : 'newest');
   const deliveryMode=getDeliveryMode(request);
   const [mediaResult, trendingResult] = await Promise.all([
-    client.getMediaList({ page, per_page:cfg.ITEMS_PER_PAGE, type:type||undefined, sort:'newest' }),
+    client.getMediaList({ page, per_page:cfg.ITEMS_PER_PAGE, type:type||undefined, sort:sortOrder }),
     client.getTrending(cfg.TRENDING_COUNT, getContentTypes(cfg).length===1?getContentTypes(cfg)[0]:''),
   ]);
-  const items=mediaResult?.data||[], pagination=mediaResult?.meta?.pagination||{}, trending=trendingResult?.data||[];
+  const trending=trendingResult?.data||[];
+  const items=mediaResult?.data||[], pagination=mediaResult?.meta?.pagination||mediaResult?.meta||{};
+  const paginationTotal = pagination.total_pages||pagination.last_page||pagination.pageCount||1;
   const pageTitle=page>1?`${cfg.WARUNG_NAME} - Halaman ${page}`:`${cfg.WARUNG_NAME} — ${cfg.WARUNG_TAGLINE}`;
   const pageDesc=page>1?`Halaman ${page} — ${cfg.SEO_DEFAULT_DESC}`:cfg.SEO_DEFAULT_DESC;
   let canonical;
-  if (type&&page===1) canonical=seo.canonical(`/?type=${encodeURIComponent(type)}`,request);
-  else canonical=seo.canonical(page>1?`/?page=${page}`:'/',request);
-  const homeExtraHead=(!type&&page===1)
+  const buildCanonicalParams = (pg=page) => {
+    const p = new URLSearchParams();
+    if (type) p.set('type', type);
+    if (isTrending) p.set('trending', '1');
+    else if (sortParam && sortParam !== 'newest') p.set('sort', sortParam);
+    if (pg > 1) p.set('page', String(pg));
+    const qs = p.toString();
+    return qs ? `/?${qs}` : '/';
+  };
+  canonical = seo.canonical(buildCanonicalParams(), request);
+  const homeExtraHead=(!type&&!isTrending&&!sortParam&&page===1)
     ? seo.websiteSchema('https://'+cfg.WARUNG_DOMAIN+'/'+cfg.PATH_SEARCH+'?q={search_term_string}')+seo.itemListSchema(items,canonical,cfg)
     : seo.itemListSchema(items,canonical,cfg);
-  const prevUrl=page>1?seo.canonical(`/?page=${page-1}`):null;
-  const _homeTotalPages=pagination.total_pages||(pagination.total&&cfg.ITEMS_PER_PAGE?Math.ceil(pagination.total/cfg.ITEMS_PER_PAGE):1);
-  const _homeHasNext=(pagination.has_next!==undefined)?pagination.has_next:(page<_homeTotalPages);
-  const nextUrl=_homeHasNext?seo.canonical(`/?page=${page+1}`):null;
+  const prevUrl=page>1?seo.canonical(buildCanonicalParams(page-1)):null;
+  const nextUrl=page<paginationTotal?seo.canonical(buildCanonicalParams(page+1)):null;
   const adNonce=generateNonce();
-  const head=renderHead({ title:pageTitle, desc:pageDesc, canonical, ogImage:cfg.SEO_OG_IMAGE, ogType:'website', noindex:false, cfg, seo, request, deliveryMode, extraHead:homeExtraHead+getUniqueTheme(cfg), prevUrl, nextUrl, extraNonces:[adNonce] });
-  const nav=renderNavHeader({ cfg, isHome:true });
+  const head=renderHead({ title:pageTitle, desc:pageDesc, canonical, ogImage:cfg.SEO_OG_IMAGE, ogType:'website', noindex:false, cfg, seo, request, deliveryMode, extraHead:homeExtraHead, prevUrl, nextUrl, extraNonces:[adNonce] });
+  const nav=renderNavHeader({ cfg, isHome:!isTrending&&!sortParam, currentPage: isTrending?'trending':sortParam==='popular'?'popular':sortParam==='newest'?'latest':'' });
   const filterTabsItems=getContentTypes(cfg).map(t=>{
     const meta=TYPE_META[t]||{label:ucfirst(t),icon:'fa-file'};
-    return `<a href="/?type=${t}" class="filter-tab ${type===t?'active':''}" role="tab"><i class="fas ${meta.icon}" aria-hidden="true"></i> ${meta.label}</a>`;
+    return `<a href="/?type=${t}" class="strip-item ${type===t?'active':''}" role="tab"><i class="fas ${meta.icon}" aria-hidden="true"></i> ${meta.label}</a>`;
   }).join('');
-  const filterTabs=`<div class="home-filter" role="tablist"><div class="container"><div class="category-filter">
-<a href="/" class="filter-tab ${!type?'active':''}" role="tab">Semua</a>${filterTabsItems}
-</div></div></div>`;
+  const filterTabs=`<a href="/" class="strip-item ${!type&&!sortParam&&!isTrending?'active':''}" role="tab">Semua</a>${filterTabsItems}`;
   let contentSection='';
   if (!items.length) {
     contentSection=`<div class="empty-state"><i class="fas fa-folder-open"></i><p>Tidak ada konten tersedia saat ini.</p></div>`;
   } else {
-    contentSection=renderBanner('before_grid',cfg,request,adNonce)+renderGrid(items,cfg,true,request,adNonce)+renderBanner('after_grid',cfg,request,adNonce)+renderPagination(pagination, p=>`?page=${p}${type?'&type='+type:''}`);
+    contentSection=renderBanner('before_grid',cfg,request,adNonce)+renderGrid(items,cfg,true,request,adNonce)
+      +(cfg.THEME_SHOW_PROMO?`<div class="promo-banner"><i class="fas fa-crown"></i> ${h(cfg.THEME_PROMO_TEXT)} <i class="fas fa-crown"></i></div>`:'')
+      +renderBanner('after_grid',cfg,request,adNonce)+renderPagination(pagination, p=>{
+        const params=new URLSearchParams();
+        if (type) params.set('type',type);
+        if (isTrending) params.set('trending','1');
+        else if (sortParam&&sortParam!=='newest') params.set('sort',sortParam);
+        if (p>1) params.set('page',String(p));
+        const qs=params.toString();
+        return qs?`/?${qs}`:'/';
+      });
   }
-  const sidebarCatsHtml=getContentTypes(cfg).map(t=>{
-    const meta=TYPE_META[t]||{label:ucfirst(t),icon:'fa-file'};
-    return `<a href="/?type=${t}" class="category-sidebar-item ${type===t?'active':''}" aria-current="${type===t?'page':'false'}"><i class="fas ${meta.icon}" aria-hidden="true"></i><span>${meta.label}</span><i class="fas fa-chevron-right" aria-hidden="true"></i></a>`;
-  }).join('');
-  const sidebarCats=`<aside class="widget"><h2 class="widget-title"><i class="fas fa-tags" aria-hidden="true"></i> Kategori</h2><nav class="category-sidebar">${sidebarCatsHtml}</nav></aside>`;
-  const sectionTitle=type?ucfirst(h(type)):'Konten Terbaru';
-  const main=`<main id="main-content">${renderBanner('header_top',cfg,null,adNonce)}${filterTabs}${deliveryMode?.lite?'':renderTrendingMobile(trending,cfg)}<div class="container"><div class="layout-main">
-<section class="content-grid-section">
-  <div class="section-header"><h2 class="section-title">${sectionTitle}${page>1?` <span class="section-page">— Hal. ${page}</span>`:''}</h2></div>
+  const sectionTitle=isTrending?'🔥 Trending':sortParam==='popular'?'👑 Popular':sortParam==='newest'?'✨ Terbaru':type?ucfirst(h(type)):'Konten Terbaru';
+  const main=`<main id="main-content">${renderBanner('header_top',cfg,request,adNonce)}<nav class="category-strip" aria-label="Filter kategori"><div class="category-strip-inner">${filterTabs}</div></nav>${cfg.THEME_SHOW_TRENDING&&!deliveryMode?.lite?renderTrendingMobile(trending,cfg):''}<div class="container"><div class="layout-main">
+<section class="content-area">
+  <div class="section-header"><h2 class="section-title"><i class="fas fa-fire" aria-hidden="true"></i> ${sectionTitle}${page>1?` <span class="section-page">— Hal. ${page}</span>`:''}</h2></div>
   ${contentSection}
 </section>
-<aside class="sidebar">
-  <div class="sidebar-sticky">
-  ${renderBanner('sidebar_top',cfg,request,adNonce)}
-  ${deliveryMode?.lite?'':renderTrendingWidget(trending,cfg)}
-  ${renderBanner('sidebar_mid',cfg,request,adNonce)}
-  ${sidebarCats}
-  ${renderBanner('sidebar_bottom',cfg,request,adNonce)}
-  </div>
-</aside>
 </div></div></main>`;
   return new Response(head+nav+main+renderFooter(cfg,request,adNonce), { status:200, headers:htmlHeaders(cfg,'home') });
 }
@@ -2044,7 +2121,7 @@ async function handleView(request, cfg, client, seo, segments) {
   if (cfg.WARUNG_TYPE==='B'&&reqPath===cfg.PATH_CONTENT.toLowerCase()) return handle404(cfg,seo,request);
   const [itemResult, relatedResult]=await Promise.all([client.getMediaDetail(id), client.getRelated(id,cfg.RELATED_COUNT)]);
   if (!itemResult?.data||itemResult?.status==='error') return handle404(cfg,seo,request);
-  const media=itemResult.data;
+  const media=itemResult?.data;
   if (!getContentTypes(cfg).includes(media.type)) return handle404(cfg,seo,request);
   const type=media.type||'video', related=relatedResult?.data||[];
   let albumPhotos=[];
@@ -2060,7 +2137,7 @@ async function handleView(request, cfg, client, seo, segments) {
   const playerUrl=await client.getPlayerUrl(id);
   const publishedTime=isoDate(media.created_at);
   const modifiedTime=isoDate(media.updated_at||media.created_at);
-  const extraHead=seo.contentSchema(media,canonical,playerUrl)+seo.breadcrumbSchema([{name:'Beranda',url:'/'},{name:ucfirst(type),url:'/'+cfg.PATH_CATEGORY+'/'+type},{name:media.title,url:null}],pageUrl)+getUniqueTheme(cfg);
+  const extraHead=seo.contentSchema(media,canonical,playerUrl)+seo.breadcrumbSchema([{name:'Beranda',url:'/'},{name:ucfirst(type),url:'/'+cfg.PATH_CATEGORY+'/'+type},{name:media.title,url:null}],pageUrl);
   const adNonce=generateNonce();
   const head=renderHead({ title:pageTitle, desc:pageDesc, canonical, ogImage, ogType, keywords, cfg, seo, request, extraHead, contentId:id, contentType:type, publishedTime, modifiedTime, extraNonces:[adNonce] });
   const nav=renderNavHeader({cfg});
@@ -2091,8 +2168,8 @@ ${tagsHtml}${descHtml}
   const relatedHtml=related.length?`<ol class="related-list">${related.map(rel=>`<li><a href="${h(itemUrl(rel,cfg))}" class="related-item"><img src="${h(safeThumb(rel,cfg))}" alt="" loading="lazy" width="80" height="45" onerror="this.src='${h(cfg.DEFAULT_THUMB)}'"><div class="related-info"><p class="related-title">${h(mbSubstr(rel.title,0,50))}</p><small class="related-meta"><span class="badge-small"><i class="fas ${TYPE_ICONS[rel.type]||'fa-file'}"></i> ${h(rel.type||'video')}</span><span><i class="fas fa-eye"></i> ${formatViews(rel.views||0)}</span></small></div></a></li>`).join('')}</ol>`:`<p class="empty-state">Tidak ada konten terkait.</p>`;
   const popularTags=media.tags?.slice(0,5).map(t=>`<a href="${h(tagUrl(t,cfg))}" class="tag">#${h(t)}</a>`).join('')||'';
   const lightboxHtml=type==='album'?`<div id="lightbox" class="lightbox hidden" role="dialog" aria-modal="true"><div class="lightbox-content"><img id="lightbox-img" src="" alt="" class="lightbox-image"><button type="button" id="lightboxClose" class="lightbox-close" aria-label="Tutup"><i class="fas fa-times"></i></button><div class="lightbox-nav"><button type="button" id="lightboxPrev" class="lightbox-prev" aria-label="Sebelumnya"><i class="fas fa-chevron-left"></i></button><button type="button" id="lightboxNext" class="lightbox-next" aria-label="Berikutnya"><i class="fas fa-chevron-right"></i></button></div><div class="lightbox-caption" id="lightbox-caption"></div></div></div>
-<script nonce="${generateNonce()}">var _lb={idx:0,photos:${JSON.stringify(albumPhotos.map(p=>p.url))},titles:${JSON.stringify(albumPhotos.map(()=>media.title))}};function openLightbox(src,i,t){_lb.idx=i;var img=document.getElementById('lightbox-img'),cap=document.getElementById('lightbox-caption'),lb=document.getElementById('lightbox');img.src=src;img.alt=t+' - Foto '+(i+1);cap.textContent=t+' ('+(i+1)+' / '+_lb.photos.length+')';lb.classList.remove('hidden');document.body.style.overflow='hidden';lb.querySelector('.lightbox-close').focus();}function closeLightbox(e){if(!e||e.target===e.currentTarget||e.target.closest('.lightbox-close')){var lb=document.getElementById('lightbox');lb.classList.add('hidden');document.body.style.overflow='';}}function navigateLightbox(d){var n=(_lb.idx+d+_lb.photos.length)%_lb.photos.length;_lb.idx=n;var img=document.getElementById('lightbox-img'),cap=document.getElementById('lightbox-caption');img.src=_lb.photos[n];cap.textContent=_lb.titles[n]+' ('+(n+1)+' / '+_lb.photos.length+')';}(function(){var lb=document.getElementById('lightbox'),lc=document.getElementById('lightboxClose'),lp=document.getElementById('lightboxPrev'),ln=document.getElementById('lightboxNext');if(lb)lb.addEventListener('click',function(e){if(e.target===lb)closeLightbox(e);});if(lc)lc.addEventListener('click',closeLightbox);if(lp)lp.addEventListener('click',function(){navigateLightbox(-1);});if(ln)ln.addEventListener('click',function(){navigateLightbox(1);});document.querySelectorAll('.js-lightbox-open').forEach(function(btn){btn.addEventListener('click',function(){openLightbox(btn.dataset.src,parseInt(btn.dataset.idx),btn.dataset.title);});});})();document.addEventListener('keydown',function(e){var lb=document.getElementById('lightbox');if(lb&&!lb.classList.contains('hidden')){if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft')navigateLightbox(-1);if(e.key==='ArrowRight')navigateLightbox(1);}});<\/script>`:'';;
-  const pageScript=`<script nonce="${generateNonce()}">function copyLink(btn){var url=btn.dataset.url||location.href;if(navigator.clipboard){navigator.clipboard.writeText(url).then(()=>showToast('Link disalin!')).catch(()=>fallbackCopy(url));}else fallbackCopy(url);}function fallbackCopy(text){var ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;top:-999px';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');showToast('Link disalin!');}catch{prompt('Salin link:',text);}document.body.removeChild(ta);}function showToast(msg){var ex=document.querySelector('.toast');ex&&ex.remove();var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.parentNode&&t.remove(),2200);}function shareContent(){if(navigator.share){navigator.share({title:${JSON.stringify(media.title)},url:location.href}).catch(()=>{});}else copyLink({dataset:{url:location.href}});}function toggleDesc(btn){var id=btn.getAttribute('aria-controls'),fd=document.getElementById(id);if(!fd)return;var open=btn.getAttribute('aria-expanded')==='true';fd.classList.toggle('hidden',open);fd.setAttribute('aria-hidden',String(open));btn.setAttribute('aria-expanded',String(!open));btn.textContent=open?'Baca selengkapnya':'Tutup';}
+<script nonce="${adNonce}">var _lb={idx:0,photos:${JSON.stringify(albumPhotos.map(p=>p.url))},titles:${JSON.stringify(albumPhotos.map(()=>media.title))}};function openLightbox(src,i,t){_lb.idx=i;var img=document.getElementById('lightbox-img'),cap=document.getElementById('lightbox-caption'),lb=document.getElementById('lightbox');img.src=src;img.alt=t+' - Foto '+(i+1);cap.textContent=t+' ('+(i+1)+' / '+_lb.photos.length+')';lb.classList.remove('hidden');document.body.style.overflow='hidden';lb.querySelector('.lightbox-close').focus();}function closeLightbox(e){if(!e||e.target===e.currentTarget||e.target.closest('.lightbox-close')){var lb=document.getElementById('lightbox');lb.classList.add('hidden');document.body.style.overflow='';}}function navigateLightbox(d){var n=(_lb.idx+d+_lb.photos.length)%_lb.photos.length;_lb.idx=n;var img=document.getElementById('lightbox-img'),cap=document.getElementById('lightbox-caption');img.src=_lb.photos[n];cap.textContent=_lb.titles[n]+' ('+(n+1)+' / '+_lb.photos.length+')';}(function(){var lb=document.getElementById('lightbox'),lc=document.getElementById('lightboxClose'),lp=document.getElementById('lightboxPrev'),ln=document.getElementById('lightboxNext');if(lb)lb.addEventListener('click',function(e){if(e.target===lb)closeLightbox(e);});if(lc)lc.addEventListener('click',closeLightbox);if(lp)lp.addEventListener('click',function(){navigateLightbox(-1);});if(ln)ln.addEventListener('click',function(){navigateLightbox(1);});document.querySelectorAll('.js-lightbox-open').forEach(function(btn){btn.addEventListener('click',function(){openLightbox(btn.dataset.src,parseInt(btn.dataset.idx),btn.dataset.title);});});})();document.addEventListener('keydown',function(e){var lb=document.getElementById('lightbox');if(lb&&!lb.classList.contains('hidden')){if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft')navigateLightbox(-1);if(e.key==='ArrowRight')navigateLightbox(1);}});<\/script>`:'';;
+  const pageScript=`<script nonce="${adNonce}">function copyLink(btn){var url=btn.dataset.url||location.href;if(navigator.clipboard){navigator.clipboard.writeText(url).then(()=>showToast('Link disalin!')).catch(()=>fallbackCopy(url));}else fallbackCopy(url);}function fallbackCopy(text){var ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;top:-999px';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');showToast('Link disalin!');}catch{prompt('Salin link:',text);}document.body.removeChild(ta);}function showToast(msg){var ex=document.querySelector('.toast');ex&&ex.remove();var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.parentNode&&t.remove(),2200);}function shareContent(){if(navigator.share){navigator.share({title:${JSON.stringify(media.title)},url:location.href}).catch(()=>{});}else copyLink({dataset:{url:location.href}});}function toggleDesc(btn){var id=btn.getAttribute('aria-controls'),fd=document.getElementById(id);if(!fd)return;var open=btn.getAttribute('aria-expanded')==='true';fd.classList.toggle('hidden',open);fd.setAttribute('aria-hidden',String(open));btn.setAttribute('aria-expanded',String(!open));btn.textContent=open?'Baca selengkapnya':'Tutup';}
 // FIX CSP: bind copy/share/toggleDesc via addEventListener
 (function(){var cp=document.getElementById('btnCopyLink'),sh=document.getElementById('btnShare');if(cp)cp.addEventListener('click',function(){copyLink(this);});if(sh)sh.addEventListener('click',shareContent);document.querySelectorAll('.js-toggle-desc').forEach(function(b){b.addEventListener('click',function(){toggleDesc(this);});});})();<\/script>`;
   const breadcrumbHtml=renderBreadcrumb([{name:'Beranda',url:homeUrl(cfg)},{name:ucfirst(type),url:categoryUrl(type,1,cfg)},{name:mbSubstr(media.title,0,40),url:null}],cfg);
@@ -2121,7 +2198,7 @@ async function handleSearch(request, cfg, client, seo) {
       if (type) params.type=type;
       const result=await client.search(q,params);
       if (result?.status==='error') errorMsg=result.message||'Pencarian gagal.';
-      else { items=result?.data||[]; pagination=result?.meta?.pagination||{}; total=pagination.total||0; }
+      else { items=result?.data||[]; pagination=result?.meta?.pagination||result?.meta||{}; total=pagination.total||0; }
     } catch(err) { if (cfg.DAPUR_DEBUG) console.error('Search error:',err.message); errorMsg='Terjadi kesalahan saat mencari.'; }
   }
   const trending=(await client.getTrending(8).catch(()=>({data:[]})))?.data||[];
@@ -2129,7 +2206,7 @@ async function handleSearch(request, cfg, client, seo) {
   const pageDesc=q?`Hasil pencarian untuk "${q}" — ${numberFormat(total)} konten di ${cfg.WARUNG_NAME}.`:'Cari video dan album di sini.';
   const canonical=seo.canonical('/'+cfg.PATH_SEARCH+(q?'?q='+encodeURIComponent(q):''),request);
   const adNonce=generateNonce();
-  const head=renderHead({ title:pageTitle, desc:pageDesc, canonical, ogImage:cfg.SEO_OG_IMAGE, ogType:'website', noindex:!q, cfg, seo, request, extraHead:getUniqueTheme(cfg), extraNonces:[adNonce] });
+  const head=renderHead({ title:pageTitle, desc:pageDesc, canonical, ogImage:cfg.SEO_OG_IMAGE, ogType:'website', noindex:!q, cfg, seo, request, extraHead:'', extraNonces:[adNonce] });
   const nav=renderNavHeader({ cfg, currentPage:'search', q });
   const filterUrl=(t,pg=1)=>{const p={};if(q)p.q=q;if(t)p.type=t;if(pg>1)p.page=pg;return '/'+cfg.PATH_SEARCH+'?'+new URLSearchParams(p).toString();};
   const filterTabs=q?`<div class="filter-tabs"><a href="${filterUrl('')}" class="filter-tab ${!type?'active':''}">Semua</a>${getContentTypes(cfg).map(t=>{const meta=TYPE_META[t]||{icon:'fa-file'};return `<a href="${filterUrl(t)}" class="filter-tab ${type===t?'active':''}"><i class="fas ${meta.icon}"></i> ${ucfirst(t)}</a>`;}).join('')}</div>`:'';
@@ -2158,11 +2235,10 @@ ${filterTabs}
   const allTags={};
   items.forEach(item=>(item.tags||[]).forEach(t=>{allTags[t]=(allTags[t]||0)+1;}));
   const topTags=Object.entries(allTags).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([t])=>t);
-  const tagsWidget=topTags.length?`<aside class="widget"><h2 class="widget-title"><i class="fas fa-tags"></i> Tag Terkait</h2><div class="tag-cloud">${topTags.map(t=>`<a href="${h(tagUrl(t,cfg))}" class="tag">#${h(t)}</a>`).join('')}</div></aside>`:'';
-  const main=`${pageHeader}<main id="main-content" class="container"><div class="layout-main">
-<section>${contentSection}</section>
-<aside class="sidebar">${renderBanner('sidebar_top',cfg,request,adNonce)}${renderTrendingWidget(trending,cfg)}${renderBanner('sidebar_mid',cfg,request,adNonce)}${tagsWidget}${renderBanner('sidebar_bottom',cfg,request,adNonce)}</aside>
-</div></main>`;
+  const tagsHtml=topTags.length?`<div class="tag-cloud" style="margin:14px 0">${topTags.map(t=>`<a href="${h(tagUrl(t,cfg))}" class="tag">#${h(t)}</a>`).join('')}</div>`:'';
+  const main=`${pageHeader}<main id="main-content"><div class="container"><div class="layout-main">
+<section class="content-area">${contentSection}${tagsHtml}</section>
+</div></div></main>`;
   return new Response(head+nav+main+renderFooter(cfg,request,adNonce), { status:200, headers:htmlHeaders(cfg,'search') });
 }
 
@@ -2175,8 +2251,8 @@ async function handleTag(request, cfg, client, seo, segments) {
   const type=getContentTypes(cfg).includes(url.searchParams.get('type')||'')?url.searchParams.get('type'):'';
   const params={page,per_page:cfg.ITEMS_PER_PAGE};
   if (type) params.type=type;
-  const [result, trendingResult]=await Promise.all([client.getByTag(tag,params), client.getTrending(6).catch(()=>({data:[]}))]);
-  const items=result?.data||[], pagination=result?.meta?.pagination||{}, total=pagination.total||0, trending=trendingResult?.data||[];
+  const result=await client.getByTag(tag,params);
+  const items=result?.data||[], pagination=result?.meta?.pagination||result?.meta||{}, total=pagination.total||0;
   const errorMsg=result?.status==='error'?(result.message||'Gagal mengambil data tag.'):'';
   const typeCounts={};
   items.forEach(item=>{typeCounts[item.type]=(typeCounts[item.type]||0)+1;});
@@ -2186,7 +2262,7 @@ async function handleTag(request, cfg, client, seo, segments) {
   const pageTitle=`#${tag}${page>1?' - Hal. '+page:''} | ${cfg.WARUNG_NAME}`;
   const pageDesc=`Konten bertag "${tag}" di ${cfg.WARUNG_NAME}. ${numberFormat(total)} konten tersedia.`;
   const canonical=seo.canonical('/'+cfg.PATH_TAG+'/'+encodeURIComponent(tag.toLowerCase()));
-  const extraHead=seo.breadcrumbSchema([{name:'Beranda',url:'/'},{name:'Tag',url:'/'+cfg.PATH_TAG},{name:'#'+tag,url:null}],'/'+cfg.PATH_TAG+'/'+encodeURIComponent(tag.toLowerCase()))+getUniqueTheme(cfg);
+  const extraHead=seo.breadcrumbSchema([{name:'Beranda',url:'/'},{name:'Tag',url:'/'+cfg.PATH_TAG},{name:'#'+tag,url:null}],'/'+cfg.PATH_TAG+'/'+encodeURIComponent(tag.toLowerCase()));
   const adNonce=generateNonce();
   const head=renderHead({ title:pageTitle, desc:pageDesc, canonical, ogImage:cfg.SEO_OG_IMAGE, ogType:'website', noindex:false, cfg, seo, request, extraHead, extraNonces:[adNonce] });
   const nav=renderNavHeader({cfg});
@@ -2202,11 +2278,9 @@ ${filterTabs}</div></div>`;
   if (errorMsg) contentSection=`<div class="no-results"><div class="no-results-icon"><i class="fas fa-exclamation-triangle"></i></div><h2>Terjadi Kesalahan</h2><p>${h(errorMsg)}</p><div class="no-results-actions"><a href="${homeUrl(cfg)}" class="btn btn-outline"><i class="fas fa-home"></i> Beranda</a></div></div>`;
   else if (!items.length) contentSection=`<div class="no-results"><div class="no-results-icon"><i class="fas fa-tag"></i></div><h2>Tag "${h(tag)}" tidak ditemukan</h2><p>Belum ada konten dengan tag ini.</p><div class="no-results-actions"><a href="${homeUrl(cfg)}" class="btn btn-outline"><i class="fas fa-home"></i> Beranda</a></div></div>`;
   else contentSection=renderBanner('before_grid',cfg,request,adNonce)+renderGrid(items,cfg,true,request,adNonce)+renderBanner('after_grid',cfg,request,adNonce)+renderPagination(pagination, p=>tagFilterUrl(type,p));
-  const relTagsWidget=relatedTags.length?`<aside class="widget"><h2 class="widget-title"><i class="fas fa-tags"></i> Tag Terkait</h2><div class="tag-cloud">${relatedTags.map(t=>`<a href="${h(tagUrl(t,cfg))}" class="tag">#${h(t)}</a>`).join('')}</div></aside>`:'';
-  const main=`${tagHeader}<main id="main-content" class="container"><div class="layout-main">
-<section>${contentSection}</section>
-<aside class="sidebar">${renderBanner('sidebar_top',cfg,request,adNonce)}${relTagsWidget}${renderBanner('sidebar_mid',cfg,request,adNonce)}${renderTrendingWidget(trending,cfg)}${renderBanner('sidebar_bottom',cfg,request,adNonce)}</aside>
-</div></main>`;
+  const main=`${tagHeader}<main id="main-content"><div class="container"><div class="layout-main">
+<section class="content-area">${contentSection}</section>
+</div></div></main>`;
   return new Response(head+nav+main+renderFooter(cfg,request,adNonce), { status:200, headers:htmlHeaders(cfg,'list') });
 }
 
@@ -2220,17 +2294,16 @@ async function handleCategory(request, cfg, client, seo, segments) {
     client.getMediaList({page,per_page:cfg.ITEMS_PER_PAGE,type,sort:'newest'}),
     client.getTrending(cfg.TRENDING_COUNT,type),
   ]);
-  const items=mediaResult?.data||[], pagination=mediaResult?.meta?.pagination||{}, trending=trendingResult?.data||[];
+  const trending=trendingResult?.data||[];
+  const items=mediaResult?.data||[], pagination=mediaResult?.meta?.pagination||mediaResult?.meta||{};
   const typeLabel={video:'Video',album:'Album'}[type]||ucfirst(type);
   const typeIcon={video:'fa-video',album:'fa-images'}[type]||'fa-file';
   const pageTitle=`${typeLabel}${page>1?' — Halaman '+page:''} | ${cfg.WARUNG_NAME}`;
   const pageDesc=`Kumpulan ${typeLabel.toLowerCase()} terbaru di ${cfg.WARUNG_NAME}. ${numberFormat(pagination.total||0)} konten tersedia.`;
   const canonical=seo.canonical('/'+cfg.PATH_CATEGORY+'/'+type+(page>1?'/'+page:''));
   const prevUrl=page>1?seo.canonical('/'+cfg.PATH_CATEGORY+'/'+type+(page>2?'/'+(page-1):'')):null;
-  const _catTotalPages=pagination.total_pages||(pagination.total&&cfg.ITEMS_PER_PAGE?Math.ceil(pagination.total/cfg.ITEMS_PER_PAGE):1);
-  const _catHasNext=(pagination.has_next!==undefined)?pagination.has_next:(page<_catTotalPages);
-  const nextUrl=_catHasNext?seo.canonical('/'+cfg.PATH_CATEGORY+'/'+type+'/'+(page+1)):null;
-  const extraHead=seo.itemListSchema(items,canonical,cfg)+seo.breadcrumbSchema([{name:'Beranda',url:'/'},{name:typeLabel,url:null}],'/'+cfg.PATH_CATEGORY+'/'+type)+getUniqueTheme(cfg);
+  const nextUrl=pagination.has_next?seo.canonical('/'+cfg.PATH_CATEGORY+'/'+type+'/'+(page+1)):null;
+  const extraHead=seo.itemListSchema(items,canonical,cfg)+seo.breadcrumbSchema([{name:'Beranda',url:'/'},{name:typeLabel,url:null}],'/'+cfg.PATH_CATEGORY+'/'+type);
   const adNonce=generateNonce();
   const head=renderHead({ title:pageTitle, desc:pageDesc, canonical, ogImage:cfg.SEO_OG_IMAGE, ogType:'website', cfg, seo, request, extraHead, prevUrl, nextUrl, extraNonces:[adNonce] });
   const nav=renderNavHeader({cfg});
@@ -2244,10 +2317,9 @@ ${pagination.total?`<p class="page-desc">${numberFormat(pagination.total)} konte
   let contentSection='';
   if (!items.length) contentSection=`<div class="empty-state"><i class="fas fa-folder-open"></i><p>Tidak ada konten ${h(typeLabel.toLowerCase())} saat ini.</p></div>`;
   else contentSection=renderBanner('before_grid',cfg,request,adNonce)+renderGrid(items,cfg,true,request,adNonce)+renderBanner('after_grid',cfg,request,adNonce)+renderPagination(pagination, p=>'/'+cfg.PATH_CATEGORY+'/'+type+(p>1?'/'+p:''));
-  const main=`${pageHeader}<main id="main-content" class="container"><div class="layout-main">
-<section>${contentSection}</section>
-<aside class="sidebar">${renderBanner('sidebar_top',cfg,request,adNonce)}${renderTrendingWidget(trending,cfg)}${renderBanner('sidebar_bottom',cfg,request,adNonce)}</aside>
-</div></main>`;
+  const main=`${pageHeader}<main id="main-content"><div class="container"><div class="layout-main">
+<section class="content-area">${contentSection}</section>
+</div></div></main>`;
   return new Response(head+nav+main+renderFooter(cfg,request,adNonce), { status:200, headers:htmlHeaders(cfg,'list') });
 }
 
@@ -2271,8 +2343,9 @@ function handleStaticPage(cfg, seo, request, slug) {
   if (!page) return handle404(cfg,seo,request);
   const canonical=seo.canonical('/'+slug);
   const pageMetaTitle=page.title+' | '+cfg.WARUNG_NAME;
-  const extraHead=(page.schema||'')+getUniqueTheme(cfg)+seo.breadcrumbSchema([{name:'Beranda',url:'/'},{name:page.title,url:null}],'/'+slug);
-  const head=renderHead({ title:pageMetaTitle, desc:page.desc, canonical, ogImage:cfg.SEO_OG_IMAGE, ogType:'website', noindex:false, cfg, seo, request, extraHead });
+  const footNonce=generateNonce();
+  const extraHead=(page.schema||'')+seo.breadcrumbSchema([{name:'Beranda',url:'/'},{name:page.title,url:null}],'/'+slug);
+  const head=renderHead({ title:pageMetaTitle, desc:page.desc, canonical, ogImage:cfg.SEO_OG_IMAGE, ogType:'website', noindex:false, cfg, seo, request, extraHead, extraNonces:[footNonce] });
   const nav=renderNavHeader({cfg});
   const breadcrumbHtml=renderBreadcrumb([{name:'Beranda',url:homeUrl(cfg)},{name:page.title,url:null}],cfg);
   const body=`<main id="main-content" class="container" style="padding-top:2rem;padding-bottom:3rem">
@@ -2282,7 +2355,7 @@ ${breadcrumbHtml}
   <div class="static-content" style="line-height:1.8;color:var(--text-color)">${page.content}</div>
 </article>
 </main>`;
-  return new Response(head+nav+body+renderFooter(cfg,request,''), { status:200, headers:htmlHeaders(cfg,'page') });
+  return new Response(head+nav+body+renderFooter(cfg,request,footNonce), { status:200, headers:htmlHeaders(cfg,'page') });
 }
 
 async function handleSitemap(request, cfg, client, env, honeyPrefix, cannibal=null) {
@@ -2382,6 +2455,7 @@ const _JSON_HEADERS={'Content-Type':'application/json; charset=UTF-8'};
 
 export async function onRequest(context) {
   const { request, env, next, waitUntil } = context;
+  applyImmortalEnv(env);
 
   // Request context terpisah — TIDAK mutate cfg yang di-cache
   const reqCtx = { id: crypto.randomUUID().slice(0, 8), startTime: Date.now() };
@@ -2432,8 +2506,14 @@ export async function onRequest(context) {
         if (bhHtml) return new Response(bhHtml,{headers:{'Content-Type':'text/html'}});
       }
 
-      // Fake content untuk headless
-      if (visitorType==='headless') return generateFakeContent(cfg,honeyPrefix);
+      // Ghost Body untuk headless
+      if (visitorType==='headless') {
+        // FIX: Gunakan cfg (bukan reqCfg) karena reqCfg belum didefinisikan di sini
+        const ghost = ghostBody(cfg, path, { title: cfg.WARUNG_NAME, description: cfg.SEO_DEFAULT_DESC });
+        return ghost
+          ? new Response(ghost, { status:200, headers:{'Content-Type':'text/html; charset=UTF-8','Cache-Control':'no-store'} })
+          : generateFakeContent(cfg, honeyPrefix);
+      }
 
       // Sacrificial lamb untuk bad traffic
       const sacrificeResp=sacrificeRedirect(request,cfg.WARUNG_DOMAIN);
@@ -2466,25 +2546,26 @@ export async function onRequest(context) {
   const cannibal = new KeywordCannibalize(cfg, env);
   const hammer   = new IndexingHammer(env, cfg);
   const morphPhase = getMorphPhase(cfg.WARUNG_DOMAIN);
-
   // Self-scheduling: tiap request cek apakah sudah waktunya ping IndexNow
   // Jalan non-blocking, tidak mempengaruhi response time
   waitUntil(hammer.maybeScheduledPing(waitUntil).catch(err => logError('IndexingHammer.schedule', err, request, reqCtx)));
 
   const dapurConfig=await client.getDapurConfig();
-  if (dapurConfig) {
-    Object.assign(cfg, {
-      _dapurConfig: dapurConfig,
-      WARUNG_TYPE: dapurConfig.warung_type || cfg.WARUNG_TYPE,
-    });
-    seo.cfg=cfg;
-  }
+  // FIX: Jangan mutasi cfg yang mungkin di-share dari cache.
+  // Buat shallow clone per-request agar tidak ada race condition antar concurrent requests.
+  const reqCfg = dapurConfig
+    ? Object.assign(Object.create(null), cfg, {
+        _dapurConfig: dapurConfig,
+        WARUNG_TYPE: dapurConfig.warung_type || cfg.WARUNG_TYPE,
+      })
+    : cfg;
+  seo.cfg = reqCfg;
 
-  const pc=cfg.PATH_CONTENT.toLowerCase();
-  const pa=cfg.PATH_ALBUM.toLowerCase();
-  const ps=cfg.PATH_SEARCH.toLowerCase();
-  const pt=cfg.PATH_TAG.toLowerCase();
-  const pca=cfg.PATH_CATEGORY.toLowerCase();
+  const pc=reqCfg.PATH_CONTENT.toLowerCase();
+  const pa=reqCfg.PATH_ALBUM.toLowerCase();
+  const ps=reqCfg.PATH_SEARCH.toLowerCase();
+  const pt=reqCfg.PATH_TAG.toLowerCase();
+  const pca=reqCfg.PATH_CATEGORY.toLowerCase();
 
   let response;
 
@@ -2495,40 +2576,40 @@ export async function onRequest(context) {
     if (keyword) {
       response = new Response(
         await cannibal.renderLanding(keyword, request, seo, client),
-        { status:200, headers: htmlHeaders(cfg,'list') }
+        { status:200, headers: htmlHeaders(reqCfg,'list') }
       );
       // Non-blocking: ping IndexNow setiap hit keyword landing page
       waitUntil(hammer.pingOnKeywordHit(keyword).catch(()=>{}));
     } else {
-      response = await handle404(cfg,seo,request);
+      response = await handle404(reqCfg,seo,request);
     }
   }
-  else if (first===''||path==='/') response=await handleHome(request,cfg,client,seo);
-  else if (first===pc) response=await handleView(request,cfg,client,seo,segments);
+  else if (first===''||path==='/') response=await handleHome(request,reqCfg,client,seo);
+  else if (first===pc) response=await handleView(request,reqCfg,client,seo,segments);
   else if (first===pa) {
-    const albumAllowed=cfg._dapurConfig?cfg._dapurConfig.features?.has_album_route===true:cfg.WARUNG_TYPE!=='A';
-    if (!albumAllowed) response=await handle404(cfg,seo,request);
-    else response=await handleView(request,cfg,client,seo,segments);
+    const albumAllowed=reqCfg._dapurConfig?reqCfg._dapurConfig.features?.has_album_route===true:reqCfg.WARUNG_TYPE!=='A';
+    if (!albumAllowed) response=await handle404(reqCfg,seo,request);
+    else response=await handleView(request,reqCfg,client,seo,segments);
   }
-  else if (first===ps) response=await handleSearch(request,cfg,client,seo);
-  else if (first===pt) response=await handleTag(request,cfg,client,seo,segments);
-  else if (first===pca) response=await handleCategory(request,cfg,client,seo,segments);
+  else if (first===ps) response=await handleSearch(request,reqCfg,client,seo);
+  else if (first===pt) response=await handleTag(request,reqCfg,client,seo,segments);
+  else if (first===pca) response=await handleCategory(request,reqCfg,client,seo,segments);
   else {
-    const staticSlugs=[cfg.PATH_ABOUT,cfg.PATH_CONTACT,cfg.PATH_FAQ,cfg.PATH_TERMS,cfg.PATH_PRIVACY,cfg.PATH_DMCA].map(s=>s.toLowerCase());
-    if (staticSlugs.includes(first)) response=handleStaticPage(cfg,seo,request,first);
+    const staticSlugs=[reqCfg.PATH_ABOUT,reqCfg.PATH_CONTACT,reqCfg.PATH_FAQ,reqCfg.PATH_TERMS,reqCfg.PATH_PRIVACY,reqCfg.PATH_DMCA].map(s=>s.toLowerCase());
+    if (staticSlugs.includes(first)) response=handleStaticPage(reqCfg,seo,request,first);
     else if (first==='sitemap.xml') {
-      response=await handleSitemap(request,cfg,client,env,honeyPrefix,cannibal);
+      response=await handleSitemap(request,reqCfg,client,env,honeyPrefix,cannibal);
       // IndexingHammer: ping IndexNow saat sitemap di-fetch Googlebot (non-blocking)
       if (isSearchBotUA) {
-        waitUntil(hammer.pingOnSitemap(client,cfg).catch(()=>{}));
+        waitUntil(hammer.pingOnSitemap(client,reqCfg).catch(()=>{}));
       }
     }
-    else if (first==='rss.xml'||first==='feed'||first==='feed.xml') response=await handleRss(request,cfg,client);
+    else if (first==='rss.xml'||first==='feed'||first==='feed.xml') response=await handleRss(request,reqCfg,client);
     else if (path.endsWith('.txt')&&path.includes('key')) {
-      const hammer=new IndexingHammer(env,cfg); return hammer.generateKeyFile();
+      return hammer.generateKeyFile();
     }
     else if (first==='robots.txt') {
-      const domain=cfg.WARUNG_DOMAIN;
+      const domain=reqCfg.WARUNG_DOMAIN;
       const robots=[
         '# robots.txt — '+domain,'# Generated by Warung/26.0','',
         'User-agent: *',`Disallow: /${honeyPrefix}/`,'Disallow: /track','Crawl-delay: 2','',
@@ -2542,7 +2623,7 @@ export async function onRequest(context) {
       ].join('\n');
       response=new Response(robots,{status:200,headers:{'Content-Type':'text/plain; charset=UTF-8','Cache-Control':'public, max-age=86400'}});
     }
-    else response=await handle404(cfg,seo,request);
+    else response=await handle404(reqCfg,seo,request);
   }
 
   // ── Apply Immortal transformations ──────────────────────────────────
@@ -2551,17 +2632,29 @@ export async function onRequest(context) {
     const isBot=visitorType!=='human';
     const contentType=response.headers.get('Content-Type')||'';
     if (contentType.includes('text/html')) {
+      // Ghost Body: untuk scraper yang lolos blackhole — sajikan HTML palsu yang terlihat normal
+      // tapi konten asli disembunyikan di balik JS (search engine tidak mengeksekusi JS)
+      if (IMMORTAL.ENABLE_GHOST_BODY && (visitorType==='scraper'||visitorType==='suspicious')) {
+        const ghostHtml = ghostBody(reqCfg, path, {
+          title: reqCfg.WARUNG_NAME,
+          description: reqCfg.SEO_DEFAULT_DESC,
+        });
+        if (ghostHtml) return new Response(ghostHtml, {
+          status: response.status,
+          headers: { 'Content-Type':'text/html; charset=UTF-8', 'Cache-Control':'no-store' },
+        });
+      }
       // Digital DNA: inject meta palsu HANYA untuk bot non-search-engine
       // (headless sudah ditangani lebih awal dengan early return)
       if (isBot) {
         let html=await response.text();
-        if (IMMORTAL.ENABLE_DIGITAL_DNA) html=dnaInjectHtml(html, cfg.WARUNG_DOMAIN, path);
+        if (IMMORTAL.ENABLE_DIGITAL_DNA) html=dnaInjectHtml(html, reqCfg.WARUNG_DOMAIN, path+':'+morphPhase);
         return new Response(html,{status:response.status,headers:new Headers(response.headers)});
       }
       // Untuk user biasa: hanya CSS steganography (tidak mengubah konten visible)
       if (IMMORTAL.ENABLE_CSS_STEGO) {
         let html=await response.text();
-        html=cssInject(html, cfg);
+        html=cssInject(html, reqCfg, morphPhase);
         return new Response(html,{status:response.status,headers:new Headers(response.headers)});
       }
     }
@@ -2656,13 +2749,13 @@ const _INDEXNOW_ENDPOINTS = [
 // Pool keyword target — bisa di-override via env CANNIBALIZE_KEYWORDS
 const _DEFAULT_CANNIBALIZE_KW = [
   // Judol tier-1 (volume tinggi)
-  'avtub terbaru','playbokep update','bokeplah jepang','situs bokep indo',
-  'indosex maxwin','slot bokepsindo','bokepsin jp','bocoran playcrot gacor',
-  'bokeh online terpercaya','daftar situs bokep','bokep hijab new',
-  'link bokep gacor','pola bokep viral','portal bokep hari ini',
+  'bokep sin','play bokep','av bokep','og bokep',
+  'link bokep','bokep viral','bokep hijab','bokep king',
+  'raja bokep','bokep lokal','bokep ai',
+  'bokep lah','bokep telegram','bokep terabox',
   // Judol tier-2
   'bokep online','bokep terpercaya','situs bokep resmi',
-  'bokep online','live bokep','bokep online terpercaya',
+  'live bokep','bokep online terpercaya',
   // Long tail (lebih mudah ranking)
   'nonton bokep gratis','video bokep terbaru','bokep indo viral',
   'film dewasa gratis','video dewasa online','streaming bokep hd',
@@ -2789,6 +2882,7 @@ class KeywordCannibalize {
       keywords: pageKeywords,
       ogType: 'website',
       cfg, seo, request,
+      extraNonces: [nonce],
       extraHead: `
 <script type="application/ld+json" nonce="${nonce}">${faqSchema}</script>
 <script type="application/ld+json" nonce="${nonce}">${breadcrumbSchema}</script>`,
@@ -2796,42 +2890,22 @@ class KeywordCannibalize {
 
     const nav  = renderNavHeader({ cfg, currentPage: 'cannibalize' });
     const foot = renderFooter(cfg, request, nonce);
-    const theme= getUniqueTheme(cfg);
 
     return `${head}
-${theme}
 ${nav}
 <main id="main-content">
   <div class="container">
     <div class="page-header">
-      <nav class="breadcrumb" aria-label="Breadcrumb">
-        <ol>
-          <li><a href="/">Beranda</a></li>
-          <li aria-current="page">${h(keyword)}</li>
-        </ol>
-      </nav>
+      ${renderBreadcrumb([{name:cfg.WARUNG_NAME,url:'/'},{name:keyword,url:null}], cfg)}
       <h1 class="page-title">${h(h1)}</h1>
       <p class="page-desc">${h(intro)}</p>
     </div>
 
     <div class="layout-main">
-      <section aria-label="Konten ${h(keyword)}">
+      <section class="content-area" aria-label="Konten ${h(keyword)}">
         ${grid}
+        <div class="tag-cloud" style="margin:14px 0">${relatedLinks}</div>
       </section>
-
-      <aside class="sidebar">
-        <div class="widget">
-          <h2 class="widget-title"><i class="fas fa-tags"></i> Kata Kunci Terkait</h2>
-          <div class="tag-cloud" style="margin-top:10px">${relatedLinks}</div>
-        </div>
-
-        <div class="widget" style="margin-top:20px">
-          <h2 class="widget-title"><i class="fas fa-info-circle"></i> Tentang ${h(keyword)}</h2>
-          <div class="static-content" style="font-size:.82rem">
-            ${faqs.map(f=>`<p><strong>${h(f.q)}</strong><br>${h(f.a)}</p>`).join('')}
-          </div>
-        </div>
-      </aside>
     </div>
   </div>
 </main>
@@ -2902,7 +2976,7 @@ class IndexingHammer {
     const key     = hexHash(host, 16);
     const payload = { host, key, keyLocation:`https://${host}/${key}.txt`, urlList: urls.slice(0,50) };
     // Fire all endpoints parallel, non-blocking
-    Promise.all(_INDEXNOW_ENDPOINTS.map(endpoint =>
+    return Promise.all(_INDEXNOW_ENDPOINTS.map(endpoint =>
       fetch(endpoint, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
