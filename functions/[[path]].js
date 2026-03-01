@@ -1884,24 +1884,33 @@ function renderGrid(items, cfg, midBannerEnabled=true, request=null, nonce='') {
 }
 
 function renderPagination(pagination, buildUrl) {
-  if (!pagination||(pagination.total_pages||1)<=1) return '';
-  const page=pagination.current_page||1, total=pagination.total_pages||1;
+  if (!pagination) return '';
+  // FIX: Hitung total_pages dari total+per_page jika API tidak mengembalikannya
+  const perPage = pagination.per_page || pagination.limit || 24;
+  const totalItems = pagination.total || 0;
+  const totalPages = pagination.total_pages
+    || (totalItems && perPage ? Math.ceil(totalItems / perPage) : 1);
+  if (totalPages <= 1) return '';
+  const page = pagination.current_page || 1;
+  // FIX: Hitung has_prev/has_next jika tidak ada dari API
+  const hasPrev = (pagination.has_prev !== undefined) ? pagination.has_prev : (page > 1);
+  const hasNext = (pagination.has_next !== undefined) ? pagination.has_next : (page < totalPages);
   let html=`<nav class="pagination" aria-label="Navigasi halaman">`;
-  if (pagination.has_prev) html+=`<a href="${buildUrl(page-1)}" class="page-btn" rel="prev"><i class="fas fa-chevron-left" aria-hidden="true"></i> Sebelumnya</a>`;
+  if (hasPrev) html+=`<a href="${buildUrl(page-1)}" class="page-btn" rel="prev"><i class="fas fa-chevron-left" aria-hidden="true"></i> Sebelumnya</a>`;
   html+='<div class="page-numbers">';
   const showPages=[];
-  if (total<=7) { for (let p=1;p<=total;p++) showPages.push(p); }
+  if (totalPages<=7) { for (let p=1;p<=totalPages;p++) showPages.push(p); }
   else {
     showPages.push(1); if (page>3) showPages.push('…');
-    for (let p=Math.max(2,page-1);p<=Math.min(total-1,page+1);p++) showPages.push(p);
-    if (page<total-2) showPages.push('…'); showPages.push(total);
+    for (let p=Math.max(2,page-1);p<=Math.min(totalPages-1,page+1);p++) showPages.push(p);
+    if (page<totalPages-2) showPages.push('…'); showPages.push(totalPages);
   }
   showPages.forEach(p=>{
     if (p==='…') html+=`<span class="page-ellipsis">…</span>`;
     else html+=`<a href="${buildUrl(p)}" class="page-number${p===page?' active':''}" ${p===page?'aria-current="page"':`aria-label="Halaman ${p}"`}>${p}</a>`;
   });
   html+='</div>';
-  if (pagination.has_next) html+=`<a href="${buildUrl(page+1)}" class="page-btn" rel="next">Berikutnya <i class="fas fa-chevron-right" aria-hidden="true"></i></a>`;
+  if (hasNext) html+=`<a href="${buildUrl(page+1)}" class="page-btn" rel="next">Berikutnya <i class="fas fa-chevron-right" aria-hidden="true"></i></a>`;
   html+='</nav>';
   return html;
 }
@@ -1982,7 +1991,9 @@ async function handleHome(request, cfg, client, seo) {
     ? seo.websiteSchema('https://'+cfg.WARUNG_DOMAIN+'/'+cfg.PATH_SEARCH+'?q={search_term_string}')+seo.itemListSchema(items,canonical,cfg)
     : seo.itemListSchema(items,canonical,cfg);
   const prevUrl=page>1?seo.canonical(`/?page=${page-1}`):null;
-  const nextUrl=pagination.has_next?seo.canonical(`/?page=${page+1}`):null;
+  const _homeTotalPages=pagination.total_pages||(pagination.total&&cfg.ITEMS_PER_PAGE?Math.ceil(pagination.total/cfg.ITEMS_PER_PAGE):1);
+  const _homeHasNext=(pagination.has_next!==undefined)?pagination.has_next:(page<_homeTotalPages);
+  const nextUrl=_homeHasNext?seo.canonical(`/?page=${page+1}`):null;
   const adNonce=generateNonce();
   const head=renderHead({ title:pageTitle, desc:pageDesc, canonical, ogImage:cfg.SEO_OG_IMAGE, ogType:'website', noindex:false, cfg, seo, request, deliveryMode, extraHead:homeExtraHead+getUniqueTheme(cfg), prevUrl, nextUrl, extraNonces:[adNonce] });
   const nav=renderNavHeader({ cfg, isHome:true });
@@ -2216,7 +2227,9 @@ async function handleCategory(request, cfg, client, seo, segments) {
   const pageDesc=`Kumpulan ${typeLabel.toLowerCase()} terbaru di ${cfg.WARUNG_NAME}. ${numberFormat(pagination.total||0)} konten tersedia.`;
   const canonical=seo.canonical('/'+cfg.PATH_CATEGORY+'/'+type+(page>1?'/'+page:''));
   const prevUrl=page>1?seo.canonical('/'+cfg.PATH_CATEGORY+'/'+type+(page>2?'/'+(page-1):'')):null;
-  const nextUrl=pagination.has_next?seo.canonical('/'+cfg.PATH_CATEGORY+'/'+type+'/'+(page+1)):null;
+  const _catTotalPages=pagination.total_pages||(pagination.total&&cfg.ITEMS_PER_PAGE?Math.ceil(pagination.total/cfg.ITEMS_PER_PAGE):1);
+  const _catHasNext=(pagination.has_next!==undefined)?pagination.has_next:(page<_catTotalPages);
+  const nextUrl=_catHasNext?seo.canonical('/'+cfg.PATH_CATEGORY+'/'+type+'/'+(page+1)):null;
   const extraHead=seo.itemListSchema(items,canonical,cfg)+seo.breadcrumbSchema([{name:'Beranda',url:'/'},{name:typeLabel,url:null}],'/'+cfg.PATH_CATEGORY+'/'+type)+getUniqueTheme(cfg);
   const adNonce=generateNonce();
   const head=renderHead({ title:pageTitle, desc:pageDesc, canonical, ogImage:cfg.SEO_OG_IMAGE, ogType:'website', cfg, seo, request, extraHead, prevUrl, nextUrl, extraNonces:[adNonce] });
