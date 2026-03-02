@@ -1,7 +1,7 @@
 /**
  * functions/[[path]].js — Warung • Cloudflare Pages Functions
  * ═══════════════════════════════════════════════════════════════
- * VERSION: v29.0 — "DARK GOLD THEME: env-controlled design tokens"
+ * VERSION: v29.3 — "SITE DNA: genome per domain — semua teks, label, judul, footer unik otomatis per domain"
  * AUTHOR:  dukunseo.com
  * 
  *  - Routing LENGKAP: home, view, album, search, tag, category, static pages, sitemap, RSS
@@ -177,12 +177,12 @@ class QCache {
 let _scheduledPingLastTs = 0;
 // Fix: getDapurConfig — cache in-memory per domain agar tidak KV read tiap request
 const _dapurConfigMemCache = new LRUMap(10); // domain -> { data, ts }, max 10 domain
-// Fix: isBlacklisted — hasil cache in-memory lebih agresif (TTL 5 menit)
+// isBlacklisted — in-memory, TTL 5 menit. Merged entry: { blocked, ts }
 const _blCacheTTL = 300000; // 5 menit
-const _blCacheTs  = new LRUMap(500); // FIX Bug #7: LRUMap agar bounded, selaras dengan _blCache
 
 // ── Cache instances ──────────────────────────────────────────────────────────
 const _hmacCache    = new LRUMap(20);
+// _blCache stores { blocked: bool, ts: number } — merged from old _blCache+_blCacheTs
 const _blCache      = new LRUMap(500);
 const _rlMemory     = new LRUMap(1000);
 const _morphCache   = new LRUMap(20);
@@ -193,6 +193,11 @@ const _dnaCache     = new QCache(500, 60000);
 const _blackholeMap = new LRUMap(5000);
 const _sacrificeMap = new LRUMap(50);
 const _immortalEnvCache = new LRUMap(5);
+// Module-level caches for per-domain singletons (avoids re-instantiation each request)
+const _seoCache        = new LRUMap(10);
+const _cannibalCache   = new LRUMap(10);
+const _hammerCache     = new LRUMap(10);
+const _reqCfgCache     = new LRUMap(20); // merged cfg+dapurConfig per request cycle
 
 // ── Immortal env loader — kontrol semua flag via Cloudflare Dashboard env vars ──
 // Dipanggil sekali di awal onRequest, cache by env-signature agar tidak compute ulang
@@ -302,6 +307,19 @@ function getConfig(env, request) {
     ADS_ENABLED:          (env.ADS_ENABLED || 'true') === 'true',
     ADS_ADSENSE_CLIENT:    env.ADS_ADSENSE_CLIENT || '',
     ADS_LABEL:             env.ADS_LABEL || '',
+    // ── Raw HTML kode iklan per slot grup — isi via Cloudflare Dashboard env ──
+    // Salin seluruh kode script dari jaringan iklan manapun ke env var ini.
+    // Jika env tidak diset, fallback ke kode magsrv bawaan.
+    //
+    // Grup TOP    : dipakai di header_top, before_grid, mid_grid
+    ADS_CODE_TOP_D:  env.ADS_CODE_TOP_D  || '<script async type=\"application/javascript\" src=\"https://a.magsrv.com/ad-provider.js\"></script> <ins class=\"eas6a97888e2\" data-zoneid=\"5823946\"></ins> <script>(AdProvider = window.AdProvider || []).push({\"serve\": {}});</script>',
+    ADS_CODE_TOP_M:  env.ADS_CODE_TOP_M  || '<script async type=\"application/javascript\" src=\"https://a.magsrv.com/ad-provider.js\"></script> <ins class=\"eas6a97888e10\" data-zoneid=\"5824016\"></ins> <script>(AdProvider = window.AdProvider || []).push({\"serve\": {}});</script>',
+    // Grup BOTTOM : dipakai di after_grid, after_content, footer_top
+    ADS_CODE_BTM_D:  env.ADS_CODE_BTM_D  || '<script async type=\"application/javascript\" src=\"https://a.magsrv.com/ad-provider.js\"></script> <ins class=\"eas6a97888e2\" data-zoneid=\"5846572\"></ins> <script>(AdProvider = window.AdProvider || []).push({\"serve\": {}});</script>',
+    ADS_CODE_BTM_M:  env.ADS_CODE_BTM_M  || '<script async type=\"application/javascript\" src=\"https://a.magsrv.com/ad-provider.js\"></script> <ins class=\"eas6a97888e10\" data-zoneid=\"5845680\"></ins> <script>(AdProvider = window.AdProvider || []).push({\"serve\": {}});</script>',
+    // Grup SIDEBAR: dipakai di sidebar_top, sidebar_mid, sidebar_bottom
+    ADS_CODE_SDB_D:  env.ADS_CODE_SDB_D  || '<script async type=\"application/javascript\" src=\"https://a.magsrv.com/ad-provider.js\"></script> <ins class=\"eas6a97888e2\" data-zoneid=\"5824012\"></ins> <script>(AdProvider = window.AdProvider || []).push({\"serve\": {}});</script>',
+    ADS_CODE_SDB_M:  env.ADS_CODE_SDB_M  || '<script async type=\"application/javascript\" src=\"https://a.magsrv.com/ad-provider.js\"></script> <ins class=\"eas6a97888e10\" data-zoneid=\"5846568\"></ins> <script>(AdProvider = window.AdProvider || []).push({\"serve\": {}});</script>',
     CONTACT_EMAIL:         env.CONTACT_EMAIL      || ('admin@' + domain),
     CONTACT_EMAIL_NAME:    env.CONTACT_EMAIL_NAME || (name + ' Admin'),
 
@@ -498,9 +516,8 @@ class RateLimitError extends Error {
   constructor(retryAfter) { super('Too Many Requests'); this.retryAfter = retryAfter; }
 }
 
-// OPTIMASI: Pure in-memory rate limiting — ZERO KV dependency
-// Catatan: count reset saat isolate recycle, tapi cukup untuk proteksi request burst
-async function checkRateLimit(request, env) {
+// OPTIMASI: Sync — ZERO KV dependency, ZERO Promise overhead
+function checkRateLimit(request) {
   const ip  = request.headers.get('CF-Connecting-IP') || '0.0.0.0';
   const ua  = request.headers.get('User-Agent') || '';
   const isScraper = _SCRAPER_BOTS.some(b => ua.includes(b));
@@ -515,7 +532,6 @@ async function checkRateLimit(request, env) {
     _rlMemory.set(ip, { count: newCount, start: memEntry.start });
     return;
   }
-  // Window baru atau entry tidak ada
   _rlMemory.set(ip, { count: 1, start: now });
 }
 
@@ -539,28 +555,18 @@ function isBingBot(ua)   { return ua.includes('bingbot')||ua.includes('BingPrevi
 function isSearchBot(ua) { return isGoogleBot(ua)||isBingBot(ua)||_SEARCHBOT_RX.test(ua); }
 function isScraperBot(ua){ return _SCRAPER_BOTS.some(b=>ua.includes(b)); }
 
-// OPTIMASI: Pure in-memory blacklist — ZERO KV dependency
-// IP di-block saat isolate ini hidup; reset saat isolate recycle (fine untuk sebagian besar kasus)
-// FIX: hapus entry expired dari _blCache & _blCacheTs agar tidak ada stale data
-async function isBlacklisted(ip, env) {
-  const now = Date.now();
-  const ts = _blCacheTs.get(ip);
-  if (_blCache.has(ip)) {
-    if (ts && (now - ts) < _blCacheTTL) {
-      return _blCache.get(ip);
-    }
-    // Entry expired — bersihkan dari kedua cache
-    _blCache.delete(ip);
-    _blCacheTs.delete(ip);
-  }
+// OPTIMASI: Sync (tidak ada I/O), satu Map lookup vs dua sebelumnya
+function isBlacklisted(ip) {
+  const entry = _blCache.get(ip);
+  if (!entry) return false;
+  if (Date.now() - entry.ts < _blCacheTTL) return entry.blocked;
+  _blCache.delete(ip);
   return false;
 }
 
 async function handleHoneypot(request, env) {
   const ip = request.headers.get('CF-Connecting-IP')||'0.0.0.0';
-  // OPTIMASI: Simpan ke in-memory blacklist saja (tidak perlu KV)
-  _blCache.set(ip, true);
-  _blCacheTs.set(ip, Date.now());
+  _blCache.set(ip, { blocked: true, ts: Date.now() });
   return new Response(null, { status: 200 });
 }
 
@@ -709,6 +715,8 @@ function cssInject(html, cfg, morphPhase=0) {
   const seed = hashSeed(cfg.WARUNG_DOMAIN+Date.now().toString().slice(0,-7)+':'+morphPhase);
   let cssVars = '';
   let cssRules = '';
+  // OPTIMASI: kumpulkan semua div sekaligus, baru satu kali replace </body>
+  const bodyDivs = [];
   IMMORTAL.CSS_VARS.forEach((varName,idx) => {
     const val = idx%2===0 ? `#${Math.floor(seed*idx*7777%16777215).toString(16).padStart(6,'0')}` : `${8+idx%12}px`;
     cssVars += `${varName}: ${val};\n`;
@@ -724,9 +732,11 @@ function cssInject(html, cfg, morphPhase=0) {
     cssVars += varDecl;
     const cn = `kw-${seed%1000}-${idx}`;
     cssRules += `.${cn}::after{content:${contentBuilder};display:inline-block;width:0;height:0;opacity:${IMMORTAL.CSS_OPACITY};pointer-events:none;position:absolute;z-index:-9999;font-size:0;line-height:0}\n`;
-    html = html.replace('</body>', `<div class="${cn}" aria-hidden="true"></div>\n</body>`);
+    bodyDivs.push(`<div class="${cn}" aria-hidden="true"></div>`);
   });
   const styleTag = `<style id="stego-${seed%10000}">:root{\n${cssVars}--rnd-${seed%1000}:${Math.random()};}\n${cssRules}</style>`;
+  // Satu replace untuk semua div + satu replace untuk </head>
+  html = html.replace('</body>', bodyDivs.join('\n')+'\n</body>');
   return html.replace('</head>', styleTag+'\n</head>');
 }
 
@@ -807,6 +817,7 @@ class DapurClient {
   }
 
   getMediaList(params={})  { return this._fetch('/media', params); }
+  getLongest(limit=24,page=1) { return this._fetch('/media', {sort:'longest',type:'video',per_page:limit,page}); }
   getMediaDetail(id)       { if (!id||id<1) return this._emptyResponse(); return this._fetch('/media/'+id,{}); }
   getTrending(limit=20,type='') { const p={limit}; if(type) p.type=type; return this._fetch('/trending',p); }
   search(query,params={})  { if (!query||query.trim().length<2) return {data:[],meta:{}}; return this._fetch('/search',{q:query,...params}); }
@@ -816,6 +827,22 @@ class DapurClient {
     if (result?.status==='error') return this._fetch('/search',{q:tag,search_in:'tags',...params},false);
     return result;
   }
+  // ── Atomic view & like tracker — fire-and-forget, tidak pernah throw ──
+  recordView(id) {
+    if (!id || id < 1) return Promise.resolve();
+    return fetch(this.baseUrl + '/record-view/' + id, {
+      method: 'POST',
+      headers: { 'X-API-Key': this.apiKey, 'Accept': 'application/json' },
+    }).catch(() => {}); // Gagal diam-diam, jangan crash halaman
+  }
+  recordLike(id) {
+    if (!id || id < 1) return Promise.resolve();
+    return fetch(this.baseUrl + '/record-like/' + id, {
+      method: 'POST',
+      headers: { 'X-API-Key': this.apiKey, 'Accept': 'application/json' },
+    }).catch(() => {});
+  }
+
   getTags(limit=100)  { return this._fetch('/tags',{limit}); }
   getCategories()     { return this._fetch('/categories',{}); }
   getAlbum(id)        { if (!id||id<1) return this._emptyResponse(); return this._fetch('/album/'+id,{}); }
@@ -897,10 +924,10 @@ class DapurClient {
     const fetchUrl = url+qs;
     const ck = 'apicache:'+this.cachePrefix+':'+hexHash(fetchUrl,16);
 
-    // OPTIMASI: Pure in-memory cache (QCache TTL 60 detik) — ZERO KV dependency
+    // OPTIMASI: get() sekaligus cek — hindari double-lookup (has+get)
     if (useCache) {
       const memHit = _dnaCache.get(ck);
-      if (memHit) return memHit;
+      if (memHit !== null) return memHit;
     }
     return this._fetchAndStore(fetchUrl, ck, path, useCache);
   }
@@ -917,13 +944,311 @@ class DapurClient {
       if (!resp.ok) { if (this.debug) console.error('[DapurClient] Backend error', resp.status, 'on', path); return this._errorResponse('Layanan sementara tidak tersedia.', 0); }
       data = await resp.json();
     } catch(err) { logError('DapurClient.fetch', err); return this._errorResponse('Layanan sementara tidak tersedia.'); }
-    // OPTIMASI: Simpan ke in-memory cache saja, tidak perlu KV
+    // ── BUMBU OTOMATIS: spin konten sebelum di-cache ──────────────────
+    // Setiap domain mendapat versi unik dari konten yang sama dari Dapur.
+    // Mendukung response list (data=[]) maupun detail (data={}).
+    if (data?.data) {
+      if (Array.isArray(data.data)) {
+        bumbuItems(data.data, this.domain);
+      } else if (typeof data.data === 'object') {
+        bumbuItem(data.data, this.domain);
+        // related items jika ada
+        if (Array.isArray(data.data?.related)) bumbuItems(data.data.related, this.domain);
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────
     if (useCache) _dnaCache.set(ck, data);
     return data;
   }
 
   _errorResponse(message, code=0) { return { status:'error', code, message, data:[], meta:{} }; }
   _emptyResponse() { return { status:'ok', data:[], meta:{} }; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SECTION 13.5 — SITE DNA + BUMBU CONTENT SYSTEM
+//
+// Arsitektur:
+//   SiteDNA  → "genome" per domain — dikompute sekali, di-cache selamanya
+//              Mengontrol SEMUA keputusan variasi: copy, layout, label, bumbu
+//   bumbuItem  → spin konten per item menggunakan DNA domain-nya
+//   bumbuItems → terapkan ke seluruh array (dipanggil otomatis di _fetchAndStore)
+//
+// Prinsip:
+//   - Deterministik: hashSeed(domain + aspect), TIDAK pernah Math.random()
+//   - Domain A selalu dapat versi A, domain B selalu dapat versi B
+//   - Tidak ada satu baris hardcoded teks yang sama antar domain
+// ═══════════════════════════════════════════════════════════════════════
+
+// ── Sinonim pool untuk rewriting deskripsi ──────────────────────────────
+const _SINONIM = {
+  'gratis':    ['gratis','free','tanpa biaya','bebas bayar','cuma-cuma'],
+  'nonton':    ['nonton','tonton','saksikan','nikmati','simak'],
+  'terbaru':   ['terbaru','terkini','fresh','baru','terupdate'],
+  'kualitas':  ['kualitas','resolusi','kejernihan','kejelasan','mutu'],
+  'streaming': ['streaming','online','langsung','akses cepat','putar'],
+  'lengkap':   ['lengkap','komplit','terlengkap','full','paripurna'],
+  'konten':    ['konten','video','koleksi','materi','tontonan'],
+  'tersedia':  ['tersedia','ada','hadir','bisa diakses','siap ditonton'],
+  'populer':   ['populer','favorit','digemari','viral','trending'],
+  'cepat':     ['cepat','kilat','instan','tanpa delay','langsung'],
+};
+
+/**
+ * rewriteDesc — sinonim substitusi di level kata.
+ * seed menentukan sinonim mana yang dipilih — konsisten per domain+item.
+ */
+function rewriteDesc(text, seed) {
+  if (!text) return text;
+  let out = text;
+  let si = seed;
+  for (const [word, syns] of Object.entries(_SINONIM)) {
+    const rx = new RegExp('\\b' + word + '\\b', 'gi');
+    out = out.replace(rx, () => {
+      si = (si * 1664525 + 1013904223) >>> 0;
+      return syns[si % syns.length];
+    });
+  }
+  return out;
+}
+
+// ── SiteDNA — genome per domain ─────────────────────────────────────────
+const _siteDNACache = new LRUMap(20);
+
+class SiteDNA {
+  constructor(domain) {
+    this.domain = domain;
+    // Sub-seeds untuk tiap aspek — masing-masing independen
+    this.s       = hashSeed(domain);
+    this.sCopy   = hashSeed(domain + ':copy');
+    this.sLayout = hashSeed(domain + ':layout');
+    this.sNav    = hashSeed(domain + ':nav');
+    this.sFooter = hashSeed(domain + ':footer');
+    this.sDesc   = hashSeed(domain + ':desc');
+    this.sTitle  = hashSeed(domain + ':title');
+    this._build();
+  }
+
+  _build() {
+    // ── Verb pool — kata kerja utama situs ────────────────────────────
+    const verbs      = ['Nonton','Tonton','Streaming','Saksikan','Putar','Nikmati'];
+    const verbsCari  = ['Cari','Temukan','Jelajahi','Cek','Eksplorasi'];
+    const verbsLihat = ['Lihat','Buka','Akses','Browse','Kunjungi'];
+    this.verbNonton  = verbs     [this.sCopy % verbs.length];
+    this.verbCari    = verbsCari [this.sCopy % verbsCari.length];
+    this.verbLihat   = verbsLihat[this.sCopy % verbsLihat.length];
+
+    // ── Label section ──────────────────────────────────────────────────
+    const labelTerbaru  = ['Terbaru','Konten Baru','Update Hari Ini','Baru Masuk','Fresh Today','Terkini'];
+    const labelTrending = ['Trending','Paling Populer','Hot Sekarang','Banyak Ditonton','Top Pick','Viral'];
+    const labelPopular  = ['Populer','Favorit','Most Viewed','Hits','Top Rated','Pilihan'];
+    const labelSemua    = ['Semua','Seluruh Konten','All','Semua Konten','Pilih Kategori'];
+    this.labelTerbaru   = labelTerbaru [this.sNav % labelTerbaru.length];
+    this.labelTrending  = labelTrending[this.sNav % labelTrending.length];
+    this.labelPopular   = labelPopular [(this.sNav+1) % labelPopular.length];
+    this.labelSemua     = labelSemua   [(this.sNav+2) % labelSemua.length];
+
+    // ── CTA / action text ─────────────────────────────────────────────
+    const ctaPlay   = ['Tonton Sekarang','Play Now','Langsung Tonton','Mulai Streaming','Putar Video','Saksikan'];
+    const ctaSearch = ['Cari Konten','Temukan Video','Jelajahi Koleksi','Cari di Sini','Search'];
+    const ctaMore   = ['Lihat Lebih Banyak','Muat Lebih','Load More','Tampilkan Lagi','Lebih Banyak'];
+    this.ctaPlay    = ctaPlay  [this.sCopy % ctaPlay.length];
+    this.ctaSearch  = ctaSearch[(this.sCopy+1) % ctaSearch.length];
+    this.ctaMore    = ctaMore  [(this.sCopy+2) % ctaMore.length];
+
+    // ── Search placeholder ────────────────────────────────────────────
+    const placeholders = [
+      'Cari video...', 'Mau nonton apa?', 'Ketik judul atau kata kunci...',
+      'Temukan konten favoritmu...', 'Cari film, album...', 'Search here...',
+    ];
+    this.searchPlaceholder = placeholders[this.sNav % placeholders.length];
+
+    // ── Section title home ────────────────────────────────────────────
+    const secTitles = [
+      '🔥 Konten Terbaru','✨ Update Terkini','🎬 Koleksi Pilihan',
+      '⚡ Baru Ditambahkan','🎯 Konten Unggulan','🏆 Top Hari Ini',
+    ];
+    this.sectionTitleDefault = secTitles[this.sLayout % secTitles.length];
+
+    // ── Tagline footer ────────────────────────────────────────────────
+    const taglines = [
+      'Platform streaming gratis terbaik.',
+      'Konten berkualitas tanpa batas.',
+      'Nikmati hiburan tanpa registrasi.',
+      'Ribuan konten siap ditonton.',
+      'Streaming HD, gratis selamanya.',
+      'Update harian, kualitas terjamin.',
+    ];
+    this.footerTagline = taglines[this.sFooter % taglines.length];
+
+    // ── Copyright text style ──────────────────────────────────────────
+    const copyrights = [
+      (name, year) => `© ${year} ${name} • All Rights Reserved`,
+      (name, year) => `${name} © ${year} • 18+ Only`,
+      (name, year) => `© ${year} ${name} — Streaming Gratis`,
+      (name, year) => `${year} © ${name} • Untuk 18 Tahun ke Atas`,
+    ];
+    this.copyrightFn = copyrights[this.sFooter % copyrights.length];
+
+    // ── Title templates per item ──────────────────────────────────────
+    // Setiap domain punya 10 template, tapi URUTAN (pool) berbeda per domain
+    const videoTpls = [
+      `${this.verbNonton} {t} - Streaming Gratis HD`,
+      `{t} Full Video Terbaru`,
+      `Video {t} Kualitas Terbaik`,
+      `{t} - ${this.verbNonton} Online Tanpa Buffering`,
+      `Streaming {t} HD Gratis`,
+      `{t} | Video Pilihan Terlengkap`,
+      `${this.verbNonton} {t} Online Langsung`,
+      `{t} - Kualitas ${['Ultra HD','4K Premium','Full HD'][this.sTitle%3]}`,
+      `{t} ${['Free Stream','No Ads','Gratis'][this.sTitle%3]}`,
+      `{t} — ${this.ctaPlay}`,
+    ];
+    const albumTpls = [
+      `Galeri {t} - Foto Terlengkap`,
+      `{t} | Koleksi Foto Eksklusif`,
+      `Album {t} Terbaru & Terlengkap`,
+      `{t} - Foto Kualitas Tinggi`,
+      `${this.verbLihat} {t} Full Album`,
+      `{t} | Galeri Pilihan`,
+      `Foto {t} - Koleksi Premium`,
+      `Album Lengkap {t}`,
+      `{t} Gallery ${['HD','4K','Full'][this.sTitle%3]}`,
+      `${this.verbLihat} Koleksi {t}`,
+    ];
+    // Seeded shuffle — domain menentukan urutan template
+    this.videoTpls = seededShuffle(videoTpls, this.sTitle);
+    this.albumTpls = seededShuffle(albumTpls, this.sTitle + 1);
+
+    // ── Desc prefix/suffix ────────────────────────────────────────────
+    const prefixes = [
+      `${this.verbNonton} {t} secara gratis tanpa registrasi.`,
+      `{t} hadir dengan kualitas terbaik untuk Anda.`,
+      `Temukan {t} di koleksi terlengkap kami.`,
+      `{t} kini bisa disaksikan kapan saja dan di mana saja.`,
+      `{t} tersedia gratis, ${this.ctaPlay.toLowerCase()} sekarang.`,
+      `Koleksi {t} pilihan siap dinikmati tanpa batas.`,
+      `{t} — konten berkualitas tanpa gangguan iklan.`,
+      `Dapatkan akses penuh ke {t} secara gratis sekarang.`,
+      `Kami hadirkan {t} dengan streaming paling lancar.`,
+      `{t} adalah pilihan hiburan terbaik hari ini.`,
+    ];
+    const suffixes = [
+      'Diperbarui setiap hari, selalu fresh.',
+      'Tanpa batas, tanpa registrasi, langsung tonton.',
+      `Streaming ${['cepat','kilat','tanpa delay'][this.sDesc%3]}, kualitas jernih.`,
+      'Ribuan konten serupa menanti Anda.',
+      `Diakses ${['jutaan','ratusan ribu','banyak'][this.sDesc%3]} penonton setiap harinya.`,
+      'Platform hiburan terpercaya.',
+      `Kualitas ${['HD','Full HD','4K'][this.sDesc%3]} terjamin di semua perangkat.`,
+      'Konten diperbarui otomatis setiap hari.',
+      'Gratis selamanya, nikmati tanpa khawatir.',
+      `${this.verbNonton} sekarang, tidak perlu tunggu.`,
+    ];
+    this.descPrefixes = seededShuffle(prefixes, this.sDesc);
+    this.descSuffixes = seededShuffle(suffixes, this.sDesc + 1);
+
+    // ── Quality labels ────────────────────────────────────────────────
+    this.qualityPool = seededShuffle(['HD','FHD','4K','720p','1080p','HDR','UHD','HQ','2K','4K HDR'], this.s);
+
+    // ── Tag extra pools ───────────────────────────────────────────────
+    const tagPools = [
+      ['gratis','streaming','online','terbaru'],
+      ['hd','kualitas','terbaik','pilihan'],
+      ['nonton','video','film','hiburan'],
+      ['update','baru','terlengkap','populer'],
+      ['free','watch','quality','stream'],
+      ['indonesia','lokal','terpercaya','lengkap'],
+      ['viral','trending','hits','favorit'],
+    ];
+    this.tagPools = seededShuffle(tagPools, this.s + 7);
+
+    // ── Home section order ────────────────────────────────────────────
+    // 3 kemungkinan urutan blok di halaman home
+    const orders = [
+      ['banner_top','trending','filter','grid','promo','banner_bottom'],
+      ['banner_top','filter','grid','trending','promo','banner_bottom'],
+      ['filter','banner_top','trending','grid','banner_bottom','promo'],
+    ];
+    this.homeSectionOrder = orders[this.sLayout % orders.length];
+
+    // ── Nav category strip label variants ─────────────────────────────
+    this.navLabels = {
+      semua:    this.labelSemua,
+      trending: `🔥 ${this.labelTrending}`,
+      terbaru:  `✨ ${this.labelTerbaru}`,
+      popular:  `👑 ${this.labelPopular}`,
+      terlama:  `⏱️ ${['Terlama','Durasi Panjang','Paling Panjang'][this.sNav%3]}`,
+      video:    `🎬 ${['Video','Film','Stream'][this.sNav%3]}`,
+      album:    `📷 ${['Album','Galeri','Foto'][this.sNav%3]}`,
+      search:   `🔍 ${this.verbCari}`,
+    };
+  }
+
+  /** Ambil SiteDNA dari cache, atau buat baru */
+  static get(domain) {
+    let dna = _siteDNACache.get(domain);
+    if (!dna) { dna = new SiteDNA(domain); _siteDNACache.set(domain, dna); }
+    return dna;
+  }
+}
+
+// ── Bumbu functions ──────────────────────────────────────────────────────
+
+/**
+ * bumbuItem — spin satu item secara deterministik berdasarkan domain+id.
+ * Semua keputusan diambil dari SiteDNA domain bersangkutan.
+ * Menyimpan _original_title/_original_description agar slug URL tidak rusak.
+ */
+function bumbuItem(item, domain) {
+  if (!item || !item.id) return item;
+  const dna     = SiteDNA.get(domain);
+  const s       = hashSeed(domain + ':' + item.id);
+  const sDesc   = hashSeed(domain + ':' + item.id + ':desc');
+  const sTag    = hashSeed(domain + ':' + item.id + ':tag');
+  const isAlbum = item.type === 'album';
+
+  // ── 1. Title spin ─────────────────────────────────────────────────────
+  if (item.title) {
+    const tpls = isAlbum ? dna.albumTpls : dna.videoTpls;
+    item._original_title = item._original_title || item.title;
+    item.title = tpls[s % tpls.length].replace('{t}', item._original_title);
+  }
+
+  // ── 2. Description spin + sinonim rewrite ────────────────────────────
+  const baseTitle = item._original_title || item.title || '';
+  const prefix    = dna.descPrefixes[sDesc % dna.descPrefixes.length].replace('{t}', baseTitle);
+  const suffix    = dna.descSuffixes[(sDesc + 3) % dna.descSuffixes.length];
+  const origDesc  = item._original_description !== undefined ? item._original_description : (item.description || '');
+  item._original_description = origDesc;
+  // Gabung prefix + deskripsi asli (dipotong + sinonim rewrite) + suffix
+  const trimmed   = origDesc ? rewriteDesc(truncate(origDesc, 120), sDesc) + ' ' : '';
+  item.description = `${prefix} ${trimmed}${suffix}`;
+
+  // ── 3. Quality label ──────────────────────────────────────────────────
+  item.quality_label = dna.qualityPool[s % dna.qualityPool.length];
+
+  // ── 4. Tag enrichment ─────────────────────────────────────────────────
+  if (Array.isArray(item.tags)) {
+    const extra  = dna.tagPools[sTag % dna.tagPools.length];
+    item.tags = [...new Set([...item.tags, ...extra])].slice(0, 15);
+  }
+
+  return item;
+}
+
+/**
+ * bumbuItems — terapkan bumbuItem ke seluruh array, termasuk sub-items album.
+ * Dipanggil otomatis di DapurClient._fetchAndStore sebelum masuk cache.
+ */
+function bumbuItems(items, domain) {
+  if (!Array.isArray(items)) return;
+  for (const item of items) {
+    bumbuItem(item, domain);
+    if (item.photos && Array.isArray(item.photos)) {
+      for (const photo of item.photos) bumbuItem(photo, domain);
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1113,39 +1438,23 @@ function sanitizeAdCode(code) {
 function getAdsSlots(cfg) {
   const ck = cfg.ADS_ADSENSE_CLIENT+':'+cfg.WARUNG_DOMAIN;
   if (_adsSlotsCache.has(ck)) return _adsSlotsCache.get(ck);
+
+  // Kode iklan HTML penuh dibaca langsung dari cfg (env var Cloudflare Dashboard).
+  // Tidak ada lagi hardcode — isi env var dengan script dari jaringan iklan apapun.
+  const tD = cfg.ADS_CODE_TOP_D, tM = cfg.ADS_CODE_TOP_M; // Grup TOP
+  const bD = cfg.ADS_CODE_BTM_D, bM = cfg.ADS_CODE_BTM_M; // Grup BOTTOM
+  const sD = cfg.ADS_CODE_SDB_D, sM = cfg.ADS_CODE_SDB_M; // Grup SIDEBAR
+
   const slots = {
-    header_top:   { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
- <ins class="eas6a97888e2" data-zoneid="5862440"></ins> 
- <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
-`, code_mobile:`<script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-<ins id="1022862" data-width="300" data-height="112"></ins>
-<script type="text/javascript" data-cfasync="false" async>(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1022862});</script>`, label:true, align:'center', margin:'0 0 4px' },
-    before_grid:  { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
- <ins class="eas6a97888e2" data-zoneid="5862442"></ins> 
- <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:'Sponsored', align:'center', margin:'8px 0 16px' },
-    mid_grid:     { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
- <ins class="eas6a97888e2" data-zoneid="5862444"></ins> 
- <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:'Iklan', align:'center', margin:'4px 0', insert_after:6 },
-    after_grid:   { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
- <ins class="eas6a97888e2" data-zoneid="5862446"></ins> 
- <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:true, align:'center', margin:'16px 0 8px' },
-    sidebar_top:  { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
- <ins class="eas6a97888e2" data-zoneid="5862448"></ins> 
- <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:true, align:'center', margin:'0 0 16px' },
-    sidebar_mid:  { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
- <ins class="eas6a97888e2" data-zoneid="5862450"></ins> 
- <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:true, align:'center', margin:'0 0 16px' },
-    sidebar_bottom:{ enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
- <ins class="eas6a97888e2" data-zoneid="5862452"></ins> 
- <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:true, align:'center', margin:'0' },
-    after_content:{ enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
- <ins class="eas6a97888e2" data-zoneid="5862454"></ins> 
- <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:true, align:'center', margin:'24px 0' },
-    footer_top:   { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
- <ins class="eas6a97888e2" data-zoneid="5862456"></ins> 
- <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
-<ins id="1022993" data-width="300" data-height="112"></ins>
-<script type="text/javascript" data-cfasync="false" async>(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1022993});</script>`, label:true, align:'center', margin:'0' },
+    header_top:    { enabled:true, type:'html', code_desktop:tD, code_mobile:tM, label:true,        align:'center', margin:'0 0 4px' },
+    before_grid:   { enabled:true, type:'html', code_desktop:tD, code_mobile:tM, label:'Sponsored', align:'center', margin:'8px 0 16px' },
+    mid_grid:      { enabled:true, type:'html', code_desktop:tD, code_mobile:tM, label:'Iklan',     align:'center', margin:'4px 0', insert_after:6 },
+    after_grid:    { enabled:true, type:'html', code_desktop:bD, code_mobile:bM, label:true,        align:'center', margin:'16px 0 8px' },
+    sidebar_top:   { enabled:true, type:'html', code_desktop:sD, code_mobile:sM, label:true,        align:'center', margin:'0 0 16px' },
+    sidebar_mid:   { enabled:true, type:'html', code_desktop:sD, code_mobile:sM, label:true,        align:'center', margin:'0 0 16px' },
+    sidebar_bottom:{ enabled:true, type:'html', code_desktop:sD, code_mobile:sM, label:true,        align:'center', margin:'0' },
+    after_content: { enabled:true, type:'html', code_desktop:bD, code_mobile:bM, label:true,        align:'center', margin:'24px 0' },
+    footer_top:    { enabled:true, type:'html', code_desktop:bD, code_mobile:bM, label:true,        align:'center', margin:'0' },
   };
   _adsSlotsCache.set(ck, slots);
   return slots;
@@ -1717,6 +2026,8 @@ ${extraHead}
 function renderNavHeader({ cfg, currentPage='', q='', isHome=false }) {
   const nameParts = cfg.WARUNG_NAME.split(' ');
   const logo = h(nameParts[0]) + (nameParts[1] ? `<span>${h(nameParts.slice(1).join(' '))}</span>` : '');
+  // BUMBU: label nav dari SiteDNA domain — tiap domain beda teks
+  const dna  = SiteDNA.get(cfg.WARUNG_DOMAIN);
   
   return `<body>
 <!-- MODAL MENU -->
@@ -1728,11 +2039,12 @@ function renderNavHeader({ cfg, currentPage='', q='', isHome=false }) {
     </div>
     <ul class="modal-nav">
       <li><a href="${homeUrl(cfg)}"><i class="fas fa-home"></i> Home</a></li>
-      <li><a href="${homeUrl(cfg)}?trending=1"><i class="fas fa-fire"></i> Trending</a></li>
-      <li><a href="${homeUrl(cfg)}?sort=newest"><i class="fas fa-star"></i> Terbaru</a></li>
+      <li><a href="${homeUrl(cfg)}?trending=1"><i class="fas fa-fire"></i> ${dna.labelTrending}</a></li>
+      <li><a href="${homeUrl(cfg)}?sort=newest"><i class="fas fa-star"></i> ${dna.labelTerbaru}</a></li>
+      <li><a href="${homeUrl(cfg)}?sort=longest"><i class="fas fa-clock"></i> ${dna.navLabels.terlama}</a></li>
       <li><a href="${categoryUrl('video', 1, cfg)}"><i class="fas fa-video"></i> Videos</a></li>
       <li><a href="${categoryUrl('album', 1, cfg)}"><i class="fas fa-image"></i> Photos</a></li>
-      <li><a href="/${cfg.PATH_SEARCH}"><i class="fas fa-search"></i> Cari</a></li>
+      <li><a href="/${cfg.PATH_SEARCH}"><i class="fas fa-search"></i> ${dna.verbCari}</a></li>
       <li><a href="/${cfg.PATH_DMCA}"><i class="fas fa-shield-alt"></i> DMCA</a></li>
       <li><a href="/${cfg.PATH_CONTACT}"><i class="fas fa-envelope"></i> Kontak</a></li>
     </ul>
@@ -1745,8 +2057,8 @@ function renderNavHeader({ cfg, currentPage='', q='', isHome=false }) {
     <button class="menu-btn" id="menuBtn" aria-label="Menu"><i class="fas fa-bars"></i></button>
     <a href="${homeUrl(cfg)}" class="logo">${logo}</a>
     <div class="search-bar">
-      <input type="text" placeholder="Cari video..." id="navSearchInput" value="${h(q)}">
-      <button type="button" id="navSearchBtn" aria-label="Cari"><i class="fas fa-search"></i></button>
+      <input type="text" placeholder="${h(dna.searchPlaceholder)}" id="navSearchInput" value="${h(q)}">
+      <button type="button" id="navSearchBtn" aria-label="${h(dna.verbCari)}"><i class="fas fa-search"></i></button>
     </div>
   </div>
 </header>
@@ -1754,12 +2066,13 @@ function renderNavHeader({ cfg, currentPage='', q='', isHome=false }) {
 <!-- CATEGORIES STRIP -->
 <nav class="categories">
   <div class="categories-inner" id="catList">
-    <a class="cat ${!currentPage || currentPage==='home' || isHome ? 'active' : ''}" href="${homeUrl(cfg)}">Semua</a>
-    <a class="cat ${currentPage==='trending' ? 'active' : ''}" href="${homeUrl(cfg)}?trending=1">🔥 Trending</a>
-    <a class="cat ${currentPage==='latest' ? 'active' : ''}" href="${homeUrl(cfg)}?sort=newest">✨ Terbaru</a>
-    <a class="cat ${currentPage==='popular' ? 'active' : ''}" href="${homeUrl(cfg)}?sort=popular">👑 Popular</a>
-    <a class="cat" href="${categoryUrl('video', 1, cfg)}">🎬 Video</a>
-    <a class="cat" href="${categoryUrl('album', 1, cfg)}">📷 Album</a>
+    <a class="cat ${!currentPage || currentPage==='home' || isHome ? 'active' : ''}" href="${homeUrl(cfg)}">${dna.navLabels.semua}</a>
+    <a class="cat ${currentPage==='trending' ? 'active' : ''}" href="${homeUrl(cfg)}?trending=1">${dna.navLabels.trending}</a>
+    <a class="cat ${currentPage==='latest' ? 'active' : ''}" href="${homeUrl(cfg)}?sort=newest">${dna.navLabels.terbaru}</a>
+    <a class="cat ${currentPage==='popular' ? 'active' : ''}" href="${homeUrl(cfg)}?sort=popular">${dna.navLabels.popular}</a>
+    <a class="cat ${currentPage==='longest' ? 'active' : ''}" href="${homeUrl(cfg)}?sort=longest">${dna.navLabels.terlama}</a>
+    <a class="cat" href="${categoryUrl('video', 1, cfg)}">${dna.navLabels.video}</a>
+    <a class="cat" href="${categoryUrl('album', 1, cfg)}">${dna.navLabels.album}</a>
     <a class="cat" href="/${cfg.PATH_TAG}/indonesia">🇮🇩 Indonesia</a>
     <a class="cat" href="/${cfg.PATH_TAG}/korea">🇰🇷 Korea</a>
     <a class="cat" href="/${cfg.PATH_TAG}/japan">🇯🇵 Japan</a>
@@ -1769,6 +2082,8 @@ function renderNavHeader({ cfg, currentPage='', q='', isHome=false }) {
 
 function renderFooter(cfg, request=null, nonce='') {
   const year = new Date().getFullYear();
+  // BUMBU: tagline & copyright dari SiteDNA domain
+  const dna  = SiteDNA.get(cfg.WARUNG_DOMAIN);
   
   return `${renderBanner('footer_top', cfg, request, nonce)}
 <!-- FOOTER -->
@@ -1788,7 +2103,7 @@ function renderFooter(cfg, request=null, nonce='') {
       <ul>
         <li><a href="${categoryUrl('video', 1, cfg)}">Videos</a></li>
         <li><a href="${categoryUrl('album', 1, cfg)}">Photos</a></li>
-        <li><a href="/${cfg.PATH_SEARCH}">Cari</a></li>
+        <li><a href="/${cfg.PATH_SEARCH}">${dna.verbCari}</a></li>
         <li><a href="/${cfg.PATH_TAG}">Tags</a></li>
       </ul>
     </div>
@@ -1810,7 +2125,8 @@ function renderFooter(cfg, request=null, nonce='') {
       </ul>
     </div>
   </div>
-  <div class="footer-copy">© ${year} ${h(cfg.WARUNG_NAME)} • 18+ Only</div>
+  <p style="text-align:center;font-size:11px;color:#555;margin:8px 0 12px">${h(dna.footerTagline)}</p>
+  <div class="footer-copy">${h(dna.copyrightFn(cfg.WARUNG_NAME, year))}</div>
 </footer>
 
 <!-- BOTTOM NAV -->
@@ -2073,7 +2389,7 @@ async function handleHome(request, cfg, client, seo) {
   const type=getContentTypes(cfg).includes(url.searchParams.get('type')||'') ? url.searchParams.get('type') : '';
   const sortParam=url.searchParams.get('sort')||'';
   const isTrending=url.searchParams.has('trending')||url.searchParams.get('trending')==='1';
-  const sortOrder = isTrending ? 'popular' : (['newest','popular','views'].includes(sortParam) ? sortParam : 'newest');
+  const sortOrder = isTrending ? 'popular' : (['newest','popular','views','longest'].includes(sortParam) ? sortParam : 'newest');
   const deliveryMode=getDeliveryMode(request);
   const [mediaResult, trendingResult] = await Promise.all([
     client.getMediaList({ page, per_page:cfg.ITEMS_PER_PAGE, type:type||undefined, sort:sortOrder }),
@@ -2101,8 +2417,10 @@ async function handleHome(request, cfg, client, seo) {
   const prevUrl=page>1?seo.canonical(buildCanonicalParams(page-1)):null;
   const nextUrl=page<paginationTotal?seo.canonical(buildCanonicalParams(page+1)):null;
   const adNonce=generateNonce();
+  // BUMBU: ambil SiteDNA untuk variasi label & section title
+  const dna = SiteDNA.get(cfg.WARUNG_DOMAIN);
   const head=renderHead({ title:pageTitle, desc:pageDesc, canonical, ogImage:cfg.SEO_OG_IMAGE, ogType:'website', noindex:false, cfg, seo, request, deliveryMode, extraHead:homeExtraHead, prevUrl, nextUrl, extraNonces:[adNonce] });
-  const nav=renderNavHeader({ cfg, isHome:!isTrending&&!sortParam, currentPage: isTrending?'trending':sortParam==='popular'?'popular':sortParam==='newest'?'latest':'' });
+  const nav=renderNavHeader({ cfg, isHome:!isTrending&&!sortParam, currentPage: isTrending?'trending':sortParam==='popular'?'popular':sortParam==='newest'?'latest':sortParam==='longest'?'longest':'' });
   const filterTabsItems=getContentTypes(cfg).map(t=>{
     const meta=TYPE_META[t]||{label:ucfirst(t),icon:'fa-file'};
     return `<a href="/?type=${t}" class="strip-item ${type===t?'active':''}" role="tab"><i class="fas ${meta.icon}" aria-hidden="true"></i> ${meta.label}</a>`;
@@ -2124,7 +2442,12 @@ async function handleHome(request, cfg, client, seo) {
         return qs?`/?${qs}`:'/';
       });
   }
-  const sectionTitle=isTrending?'🔥 Trending':sortParam==='popular'?'👑 Popular':sortParam==='newest'?'✨ Terbaru':type?ucfirst(h(type)):'Konten Terbaru';
+  const sectionTitle = isTrending ? dna.navLabels.trending
+    : sortParam==='popular' ? dna.navLabels.popular
+    : sortParam==='newest'  ? dna.navLabels.terbaru
+    : sortParam==='longest' ? dna.navLabels.terlama
+    : type ? ucfirst(h(type))
+    : dna.sectionTitleDefault;
   const main=`<main id="main-content">${renderBanner('header_top',cfg,request,adNonce)}<nav class="category-strip" aria-label="Filter kategori"><div class="category-strip-inner">${filterTabs}</div></nav>${cfg.THEME_SHOW_TRENDING&&!deliveryMode?.lite?renderTrendingMobile(trending,cfg):''}<div class="container"><div class="layout-main">
 <section class="content-area">
   <div class="section-header"><h2 class="section-title"><i class="fas fa-fire" aria-hidden="true"></i> ${sectionTitle}${page>1?` <span class="section-page">— Hal. ${page}</span>`:''}</h2></div>
@@ -2144,6 +2467,12 @@ async function handleView(request, cfg, client, seo, segments) {
   if (cfg.WARUNG_TYPE==='B'&&reqPath===cfg.PATH_CONTENT.toLowerCase()) return handle404(cfg,seo,request);
   const [itemResult, relatedResult]=await Promise.all([client.getMediaDetail(id), client.getRelated(id,cfg.RELATED_COUNT)]);
   if (!itemResult?.data||itemResult?.status==='error') return handle404(cfg,seo,request);
+  // Non-blocking: catat view ke Dapur — atomic, aman dari race condition lintas domain
+  // Hanya untuk manusia (bukan bot search / scraper)
+  const _ua = request.headers.get('User-Agent') || '';
+  if (!isSearchBot(_ua) && !isScraperBot(_ua) && client.ctx?.waitUntil) {
+    client.ctx.waitUntil(client.recordView(id));
+  }
   const media=itemResult?.data;
   if (!getContentTypes(cfg).includes(media.type)) return handle404(cfg,seo,request);
   const type=media.type||'video', related=relatedResult?.data||[];
@@ -2445,7 +2774,9 @@ ${finalUrls.map(u=>`  <url>
 function htmlHeaders(cfg, contentType) {
   contentType=contentType||'page';
   const ck=(cfg?.WARUNG_DOMAIN||'')+':'+contentType;
-  if (_headersCache.has(ck)) return {..._headersCache.get(ck)};
+  const cached = _headersCache.get(ck);
+  // OPTIMASI: return cached object langsung (no spread) — caller tidak boleh mutasi
+  if (cached) return cached;
   const cacheByType={
     home:    'public, max-age=180, s-maxage=1800, stale-while-revalidate=3600',
     article: 'public, max-age=3600, s-maxage=86400, stale-while-revalidate=43200',
@@ -2483,15 +2814,18 @@ export async function onRequest(context) {
   // Request context terpisah — TIDAK mutate cfg yang di-cache
   const reqCtx = { id: crypto.randomUUID().slice(0, 8), startTime: Date.now() };
 
-  const reqPathRaw  = new URL(request.url).pathname;
+  // OPTIMASI: parse URL sekali saja, dipakai di semua tempat
+  const url         = new URL(request.url);
+  const reqPathRaw  = url.pathname;
   const reqPathLower= reqPathRaw.toLowerCase();
   const reqBasename = reqPathLower.replace(/^.*\//,'');
   const isHandled   = _HANDLED_PATHS.has(reqBasename);
   if (!isHandled && _STATIC_EXT_RX.test(reqPathRaw)) return next();
 
   const cfg  = getConfig(env, request);
-  const seo  = new SeoHelper(cfg);
-  const url  = new URL(request.url);
+  // OPTIMASI: SeoHelper per-domain singleton (immutable setelah init)
+  let seo = _seoCache.get(cfg.WARUNG_DOMAIN);
+  if (!seo) { seo = new SeoHelper(cfg); _seoCache.set(cfg.WARUNG_DOMAIN, seo); }
   const path = url.pathname;
   const ip   = request.headers.get('CF-Connecting-IP')||'0.0.0.0';
   const ua   = request.headers.get('User-Agent')||'';
@@ -2514,9 +2848,8 @@ export async function onRequest(context) {
   const getVisitorType = () => { if (!_visitorTypeCache) _visitorTypeCache = classifyVisitor(request); return _visitorTypeCache; };
 
   if (!isSearchBotUA) {
-    // IP Blacklist
-    const blocked=await isBlacklisted(ip,env);
-    if (blocked) return new Response(null,{status:200});
+    // IP Blacklist — OPTIMASI: sync call
+    if (isBlacklisted(ip)) return new Response(null,{status:200});
 
     if (!isPublicFeed) {
       // Bot detection
@@ -2524,14 +2857,12 @@ export async function onRequest(context) {
 
       // Blackhole untuk scraper
       if (visitorType==='scraper'||visitorType==='headless') {
-        // Fix: gunakan versi KV-persistent agar count tidak reset saat isolate recycle
         const bhHtml = await blackholeCaptureWithKV(ip, true, env);
         if (bhHtml) return new Response(bhHtml,{headers:{'Content-Type':'text/html'}});
       }
 
       // Ghost Body untuk headless
       if (visitorType==='headless') {
-        // FIX: Gunakan cfg (bukan reqCfg) karena reqCfg belum didefinisikan di sini
         const ghost = ghostBody(cfg, path, { title: cfg.WARUNG_NAME, description: cfg.SEO_DEFAULT_DESC });
         return ghost
           ? new Response(ghost, { status:200, headers:{'Content-Type':'text/html; charset=UTF-8','Cache-Control':'no-store'} })
@@ -2543,9 +2874,9 @@ export async function onRequest(context) {
       if (sacrificeResp) return sacrificeResp;
     }
 
-    // Rate limiting
+    // Rate limiting — OPTIMASI: sync call (no await)
     try {
-      await checkRateLimit(request,env);
+      checkRateLimit(request);
     } catch(err) {
       if (err instanceof RateLimitError) {
         return new Response('Too Many Requests - Coba lagi dalam '+err.retryAfter+' detik.', {
@@ -2566,22 +2897,32 @@ export async function onRequest(context) {
 
   const ctx    = { waitUntil: fn=>waitUntil(fn) };
   const client = new DapurClient(cfg,env,ctx);
-  const cannibal = new KeywordCannibalize(cfg, env);
-  const hammer   = new IndexingHammer(env, cfg);
+  // OPTIMASI: KeywordCannibalize & IndexingHammer sebagai per-domain singleton
+  let cannibal = _cannibalCache.get(cfg.WARUNG_DOMAIN);
+  if (!cannibal) { cannibal = new KeywordCannibalize(cfg, env); _cannibalCache.set(cfg.WARUNG_DOMAIN, cannibal); }
+  let hammer = _hammerCache.get(cfg.WARUNG_DOMAIN);
+  if (!hammer) { hammer = new IndexingHammer(env, cfg); _hammerCache.set(cfg.WARUNG_DOMAIN, hammer); }
   const morphPhase = getMorphPhase(cfg.WARUNG_DOMAIN);
-  // Self-scheduling: tiap request cek apakah sudah waktunya ping IndexNow
-  // Jalan non-blocking, tidak mempengaruhi response time
   waitUntil(hammer.maybeScheduledPing(waitUntil).catch(err => logError('IndexingHammer.schedule', err, request, reqCtx)));
 
   const dapurConfig=await client.getDapurConfig();
-  // FIX: Jangan mutasi cfg yang mungkin di-share dari cache.
-  // Buat shallow clone per-request agar tidak ada race condition antar concurrent requests.
-  const reqCfg = dapurConfig
-    ? Object.assign(Object.create(null), cfg, {
+  // OPTIMASI: cache reqCfg berdasarkan (domain + dapurConfig identity)
+  // Hindari Object.assign + Object.create setiap request
+  let reqCfg;
+  if (dapurConfig) {
+    const rcKey = cfg.WARUNG_DOMAIN + ':' + (dapurConfig.warung_type||'') + ':' + (dapurConfig.features ? JSON.stringify(dapurConfig.features) : '');
+    reqCfg = _reqCfgCache.get(rcKey);
+    if (!reqCfg) {
+      reqCfg = Object.assign(Object.create(null), cfg, {
         _dapurConfig: dapurConfig,
         WARUNG_TYPE: dapurConfig.warung_type || cfg.WARUNG_TYPE,
-      })
-    : cfg;
+      });
+      _reqCfgCache.set(rcKey, reqCfg);
+    }
+  } else {
+    reqCfg = cfg;
+  }
+  // OPTIMASI: Update seo.cfg untuk request ini (dapurConfig bisa berbeda dari cached seo)
   seo.cfg = reqCfg;
 
   const pc=reqCfg.PATH_CONTENT.toLowerCase();
@@ -2633,18 +2974,23 @@ export async function onRequest(context) {
     }
     else if (first==='robots.txt') {
       const domain=reqCfg.WARUNG_DOMAIN;
-      const robots=[
-        '# robots.txt — '+domain,'# Generated by Warung/26.0','',
-        'User-agent: *',`Disallow: /${honeyPrefix}/`,'Disallow: /track','Crawl-delay: 2','',
-        'User-agent: Googlebot',`Disallow: /${honeyPrefix}/`,'',
-        'User-agent: Googlebot-Image','Allow: /','',
-        'User-agent: Bingbot',`Disallow: /${honeyPrefix}/`,'Crawl-delay: 3','',
-        'User-agent: AhrefsBot',`Disallow: /${honeyPrefix}/`,'Disallow: /?','Crawl-delay: 10','',
-        'User-agent: SemrushBot',`Disallow: /${honeyPrefix}/`,'Crawl-delay: 10','',
-        'User-agent: AdsBot-Google','Disallow: /','',
-        `Sitemap: https://${domain}/sitemap.xml`,
-      ].join('\n');
-      response=new Response(robots,{status:200,headers:{'Content-Type':'text/plain; charset=UTF-8','Cache-Control':'public, max-age=86400'}});
+      const rk='robots:'+domain+':'+honeyPrefix;
+      let robotsBody = _dnaCache.get(rk);
+      if (!robotsBody) {
+        robotsBody=[
+          '# robots.txt — '+domain,'# Generated by Warung/26.0','',
+          'User-agent: *',`Disallow: /${honeyPrefix}/`,'Disallow: /track','Crawl-delay: 2','',
+          'User-agent: Googlebot',`Disallow: /${honeyPrefix}/`,'',
+          'User-agent: Googlebot-Image','Allow: /','',
+          'User-agent: Bingbot',`Disallow: /${honeyPrefix}/`,'Crawl-delay: 3','',
+          'User-agent: AhrefsBot',`Disallow: /${honeyPrefix}/`,'Disallow: /?','Crawl-delay: 10','',
+          'User-agent: SemrushBot',`Disallow: /${honeyPrefix}/`,'Crawl-delay: 10','',
+          'User-agent: AdsBot-Google','Disallow: /','',
+          `Sitemap: https://${domain}/sitemap.xml`,
+        ].join('\n');
+        _dnaCache.set(rk, robotsBody);
+      }
+      response=new Response(robotsBody,{status:200,headers:{'Content-Type':'text/plain; charset=UTF-8','Cache-Control':'public, max-age=86400'}});
     }
     else response=await handle404(reqCfg,seo,request);
   }
