@@ -1114,15 +1114,34 @@ function getAdsSlots(cfg) {
   const ck = cfg.ADS_ADSENSE_CLIENT+':'+cfg.WARUNG_DOMAIN;
   if (_adsSlotsCache.has(ck)) return _adsSlotsCache.get(ck);
   const slots = {
-    header_top:   { enabled:true, type:'html', code_desktop:``, code_mobile:``, label:true, align:'center', margin:'0 0 4px' },
-    before_grid:  { enabled:true, type:'html', code_desktop:``, code_mobile:``, label:'Sponsored', align:'center', margin:'8px 0 16px' },
-    mid_grid:     { enabled:true, type:'html', code_desktop:``, code_mobile:``, label:'Iklan', align:'center', margin:'4px 0', insert_after:6 },
-    after_grid:   { enabled:true, type:'html', code_desktop:``, code_mobile:``, label:true, align:'center', margin:'16px 0 8px' },
-    sidebar_top:  { enabled:true, type:'html', code_desktop:``, code_mobile:``, label:true, align:'center', margin:'0 0 16px' },
-    sidebar_mid:  { enabled:true, type:'html', code_desktop:``, code_mobile:``, label:true, align:'center', margin:'0 0 16px' },
-    sidebar_bottom:{ enabled:true, type:'html', code_desktop:``, code_mobile:``, label:true, align:'center', margin:'0' },
-    after_content:{ enabled:true, type:'html', code_desktop:``, code_mobile:``, label:true, align:'center', margin:'24px 0' },
-    footer_top:   { enabled:true, type:'html', code_desktop:``, code_mobile:``, label:true, align:'center', margin:'0' },
+    header_top:   { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
+ <ins class="eas6a97888e2" data-zoneid="5862440"></ins> 
+ <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
+`, code_mobile:``, label:true, align:'center', margin:'0 0 4px' },
+    before_grid:  { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
+ <ins class="eas6a97888e2" data-zoneid="5862442"></ins> 
+ <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:'Sponsored', align:'center', margin:'8px 0 16px' },
+    mid_grid:     { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
+ <ins class="eas6a97888e2" data-zoneid="5862444"></ins> 
+ <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:'Iklan', align:'center', margin:'4px 0', insert_after:6 },
+    after_grid:   { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
+ <ins class="eas6a97888e2" data-zoneid="5862446"></ins> 
+ <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:true, align:'center', margin:'16px 0 8px' },
+    sidebar_top:  { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
+ <ins class="eas6a97888e2" data-zoneid="5862448"></ins> 
+ <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:true, align:'center', margin:'0 0 16px' },
+    sidebar_mid:  { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
+ <ins class="eas6a97888e2" data-zoneid="5862450"></ins> 
+ <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:true, align:'center', margin:'0 0 16px' },
+    sidebar_bottom:{ enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
+ <ins class="eas6a97888e2" data-zoneid="5862452"></ins> 
+ <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:true, align:'center', margin:'0' },
+    after_content:{ enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
+ <ins class="eas6a97888e2" data-zoneid="5862454"></ins> 
+ <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:true, align:'center', margin:'24px 0' },
+    footer_top:   { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
+ <ins class="eas6a97888e2" data-zoneid="5862456"></ins> 
+ <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:true, align:'center', margin:'0' },
   };
   _adsSlotsCache.set(ck, slots);
   return slots;
