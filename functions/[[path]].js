@@ -1117,7 +1117,9 @@ function getAdsSlots(cfg) {
     header_top:   { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
  <ins class="eas6a97888e2" data-zoneid="5862440"></ins> 
  <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
-`, code_mobile:``, label:true, align:'center', margin:'0 0 4px' },
+`, code_mobile:`<script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
+<ins id="1022862" data-width="300" data-height="112"></ins>
+<script type="text/javascript" data-cfasync="false" async>(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1022862});</script>`, label:true, align:'center', margin:'0 0 4px' },
     before_grid:  { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
  <ins class="eas6a97888e2" data-zoneid="5862442"></ins> 
  <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:'Sponsored', align:'center', margin:'8px 0 16px' },
@@ -1141,7 +1143,9 @@ function getAdsSlots(cfg) {
  <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:true, align:'center', margin:'24px 0' },
     footer_top:   { enabled:true, type:'html', code_desktop:`<script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script> 
  <ins class="eas6a97888e2" data-zoneid="5862456"></ins> 
- <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:``, label:true, align:'center', margin:'0' },
+ <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>`, code_mobile:`<script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
+<ins id="1022993" data-width="300" data-height="112"></ins>
+<script type="text/javascript" data-cfasync="false" async>(adsbyjuicy = window.adsbyjuicy || []).push({'adzone':1022993});</script>`, label:true, align:'center', margin:'0' },
   };
   _adsSlotsCache.set(ck, slots);
   return slots;
