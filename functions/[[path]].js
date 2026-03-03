@@ -1,18 +1,67 @@
 /**
  * functions/[[path]].js — Warung • Cloudflare Pages Functions
  * ═══════════════════════════════════════════════════════════════
- * VERSION: v29.3 — "SITE DNA: genome per domain — semua teks, label, judul, footer unik otomatis per domain"
+ * VERSION: v29.4 — "ADS ENV: semua slot iklan dikontrol penuh via dashboard"
  * AUTHOR:  dukunseo.com
- * 
+ *
  *  - Routing LENGKAP: home, view, album, search, tag, category, static pages, sitemap, RSS
- *  - Ads: HTML slot custom + AdSense, mobile/desktop aware
+ *  - Ads: HTML slot custom + AdSense, mobile/desktop aware, semua via env dashboard
  *  - SEO: SeoHelper lengkap, JSON-LD, OG, breadcrumb, sitemap moon-phase
  *  - Anti-bot: Digital DNA (bot only), Ghost Body, CSS Stego, Blackhole Trap, Sacrificial Lamb
  *  - Security: nonce CSP, HMAC, rate limiting adaptive
  *  - Performance: LRU cache, QuantumCache dengan TTL, brotli via CF, srcset responsive
  *  - Theme: DARK GOLD — semua token warna & tampilan bisa dikontrol via env dashboard
- * 
- * ── THEME ENV VARIABLES (Cloudflare Dashboard → Settings → Variables) ──────────
+ *
+ * ══ ADS ENV VARIABLES (Cloudflare Dashboard → Settings → Environment Variables) ══
+ *
+ *  ADS_ENABLED         Aktifkan/nonaktifkan semua iklan
+ *                      Nilai : 'true' atau 'false'      default: true
+ *
+ *  ADS_ADSENSE_CLIENT  Publisher ID Google AdSense (opsional, untuk auto ads)
+ *                      Contoh: ca-pub-1234567890123456
+ *
+ *  ADS_LABEL           Teks label kecil di atas slot iklan
+ *                      Contoh: Iklan  (kosongkan = tidak tampil label)
+ *
+ *  ── SLOT TOP · dipakai di: header_top · before_grid · mid_grid ───────────────
+ *
+ *  ADS_CODE_TOP_D      Kode iklan DESKTOP untuk slot TOP
+ *                      → Tempel langsung raw HTML/script dari dashboard jaringan iklan
+ *                      → Kosongkan = slot TOP tidak tampil di desktop
+ *
+ *  ADS_CODE_TOP_M      Kode iklan MOBILE untuk slot TOP
+ *                      → Boleh sama dengan ADS_CODE_TOP_D atau kode zone berbeda
+ *                      → Kosongkan = slot TOP tidak tampil di mobile
+ *
+ *  ── SLOT BOTTOM · dipakai di: after_grid · after_content · footer_top ───────
+ *
+ *  ADS_CODE_BTM_D      Kode iklan DESKTOP untuk slot BOTTOM
+ *  ADS_CODE_BTM_M      Kode iklan MOBILE  untuk slot BOTTOM
+ *
+ *  ── SLOT SIDEBAR · dipakai di: sidebar_top · sidebar_mid · sidebar_bottom ──
+ *
+ *  ADS_CODE_SDB_D      Kode iklan DESKTOP untuk slot SIDEBAR
+ *  ADS_CODE_SDB_M      Kode iklan MOBILE  untuk slot SIDEBAR
+ *
+ *  ─── Cara isi ────────────────────────────────────────────────────────────────────────
+ *  1. Buka dashboard jaringan iklan (Magsrv / Hilltopads / Exoclick / dll)
+ *  2. Buat zone / ad unit, lalu copy seluruh blok kode yang diberikan
+ *     Contoh (Magsrv):
+ *       <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script>
+ *       <ins class="eas6a97888e2" data-zoneid="1234567"></ins>
+ *       <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
+ *  3. Buka Cloudflare Dashboard → Pages → project kamu → Settings → Environment Variables
+ *  4. Edit nilai env var yang sesuai (ADS_CODE_TOP_D, dll) → paste kode iklan → klik Save
+ *  5. Tidak perlu redeploy — perubahan langsung aktif di request berikutnya
+ *
+ *  ─── Catatan ───────────────────────────────────────────────────────────────────────────
+ *  · Jika env tidak diisi → slot kosong, tidak ada iklan tampil (tidak ada fallback hardcode)
+ *  · Desktop & Mobile bisa pakai kode/zone yang sama atau berbeda
+ *  · Mendukung semua jaringan: Magsrv, Hilltopads, Exoclick, AdSense manual, dsb
+ *  · Tidak perlu redeploy kode — cukup ubah nilai env di dashboard lalu Save
+ * ═══════════════════════════════════════════════════════════════════════════════════
+ *
+ * ══ THEME ENV VARIABLES (Cloudflare Dashboard → Settings → Variables) ════════──
  *  THEME_ACCENT          Warna accent/gold     default: #ffaa00
  *  THEME_ACCENT2         Warna accent hover    default: #ffc233
  *  THEME_BG              Background utama      default: #0a0a0a
@@ -29,9 +78,9 @@
  *  THEME_SHOW_TRENDING   'true'/'false'        default: true
  *  THEME_GRID_COLS_MOBILE Kolom grid mobile 1/2 default: 2
  *  THEME_CARD_RATIO      Aspect ratio card     default: 16/9 (bisa: 2/3, 1/1)
- * ─────────────────────────────────────────────────────────────────────────────────
+ * ═════════════════════════════════════════════════════════════════════════════════
  *
- * ── IMMORTAL ENV VARIABLES ───────────────────────────────────────────────────────
+ * ══ IMMORTAL ENV VARIABLES ════════════════════════════════════════════════════════
  *  IMMORTAL_DIGITAL_DNA      'true'/'false'   default: true
  *  IMMORTAL_CSS_STEGO        'true'/'false'   default: true
  *  IMMORTAL_GHOST_BODY       'true'/'false'   default: true
@@ -44,7 +93,7 @@
  *  IMMORTAL_SCRAPER_RATE_MAX Integer          default: 10
  *  IMMORTAL_CSS_OPACITY      Float            default: 0.001
  *  IMMORTAL_DNA_POOL         Kata CSV kustom  default: (pool bawaan)
- * ─────────────────────────────────────────────────────────────────────────────────
+ * ═════════════════════════════════════════════════════════════════════════════════
  */
 
 'use strict';
@@ -307,19 +356,17 @@ function getConfig(env, request) {
     ADS_ENABLED:          (env.ADS_ENABLED || 'true') === 'true',
     ADS_ADSENSE_CLIENT:    env.ADS_ADSENSE_CLIENT || '',
     ADS_LABEL:             env.ADS_LABEL || '',
-    // ── Raw HTML kode iklan per slot grup — isi via Cloudflare Dashboard env ──
-    // Salin seluruh kode script dari jaringan iklan manapun ke env var ini.
-    // Jika env tidak diset, fallback ke kode magsrv bawaan.
-    //
+    // ── Kode iklan HTML per slot — isi via Cloudflare Dashboard env vars ──────────
+    // Kosongkan = slot tidak tampil. Lihat dokumentasi di header file.
     // Grup TOP    : dipakai di header_top, before_grid, mid_grid
-    ADS_CODE_TOP_D:  env.ADS_CODE_TOP_D  || '<script async type=\"application/javascript\" src=\"https://a.magsrv.com/ad-provider.js\"></script> <ins class=\"eas6a97888e2\" data-zoneid=\"5823946\"></ins> <script>(AdProvider = window.AdProvider || []).push({\"serve\": {}});</script>',
-    ADS_CODE_TOP_M:  env.ADS_CODE_TOP_M  || '<script async type=\"application/javascript\" src=\"https://a.magsrv.com/ad-provider.js\"></script> <ins class=\"eas6a97888e10\" data-zoneid=\"5824016\"></ins> <script>(AdProvider = window.AdProvider || []).push({\"serve\": {}});</script>',
+    ADS_CODE_TOP_D:  env.ADS_CODE_TOP_D  || '',
+    ADS_CODE_TOP_M:  env.ADS_CODE_TOP_M  || '',
     // Grup BOTTOM : dipakai di after_grid, after_content, footer_top
-    ADS_CODE_BTM_D:  env.ADS_CODE_BTM_D  || '<script async type=\"application/javascript\" src=\"https://a.magsrv.com/ad-provider.js\"></script> <ins class=\"eas6a97888e2\" data-zoneid=\"5846572\"></ins> <script>(AdProvider = window.AdProvider || []).push({\"serve\": {}});</script>',
-    ADS_CODE_BTM_M:  env.ADS_CODE_BTM_M  || '<script async type=\"application/javascript\" src=\"https://a.magsrv.com/ad-provider.js\"></script> <ins class=\"eas6a97888e10\" data-zoneid=\"5845680\"></ins> <script>(AdProvider = window.AdProvider || []).push({\"serve\": {}});</script>',
+    ADS_CODE_BTM_D:  env.ADS_CODE_BTM_D  || '',
+    ADS_CODE_BTM_M:  env.ADS_CODE_BTM_M  || '',
     // Grup SIDEBAR: dipakai di sidebar_top, sidebar_mid, sidebar_bottom
-    ADS_CODE_SDB_D:  env.ADS_CODE_SDB_D  || '<script async type=\"application/javascript\" src=\"https://a.magsrv.com/ad-provider.js\"></script> <ins class=\"eas6a97888e2\" data-zoneid=\"5824012\"></ins> <script>(AdProvider = window.AdProvider || []).push({\"serve\": {}});</script>',
-    ADS_CODE_SDB_M:  env.ADS_CODE_SDB_M  || '<script async type=\"application/javascript\" src=\"https://a.magsrv.com/ad-provider.js\"></script> <ins class=\"eas6a97888e10\" data-zoneid=\"5846568\"></ins> <script>(AdProvider = window.AdProvider || []).push({\"serve\": {}});</script>',
+    ADS_CODE_SDB_D:  env.ADS_CODE_SDB_D  || '',
+    ADS_CODE_SDB_M:  env.ADS_CODE_SDB_M  || '',
     CONTACT_EMAIL:         env.CONTACT_EMAIL      || ('admin@' + domain),
     CONTACT_EMAIL_NAME:    env.CONTACT_EMAIL_NAME || (name + ' Admin'),
 
