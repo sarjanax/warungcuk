@@ -14,6 +14,18 @@
  * ══ NEW ENV VARIABLES ═══════════════════════════════════════
  *  ADS_CODE_POPUNDER_D   Kode popunder DESKTOP (juicyads/exoclick dll)
  *  ADS_CODE_POPUNDER_M   Kode popunder MOBILE
+ *  ADS_HEADER_TOP_DESKTOP   Kode iklan header DESKTOP
+ *  ADS_HEADER_TOP_MOBILE    Kode iklan header MOBILE
+ *  ADS_MID_GRID_DESKTOP     Kode iklan mid grid DESKTOP
+ *  ADS_MID_GRID_MOBILE      Kode iklan mid grid MOBILE
+ *  ADS_AFTER_GRID_DESKTOP   Kode iklan after grid DESKTOP
+ *  ADS_AFTER_GRID_MOBILE    Kode iklan after grid MOBILE
+ *  ADS_SIDEBAR_TOP_DESKTOP  Kode iklan sidebar top DESKTOP
+ *  ADS_SIDEBAR_TOP_MOBILE   Kode iklan sidebar top MOBILE
+ *  ADS_AFTER_CONTENT_DESKTOP Kode iklan after content DESKTOP
+ *  ADS_AFTER_CONTENT_MOBILE  Kode iklan after content MOBILE
+ *  ADS_FOOTER_TOP_DESKTOP    Kode iklan footer top DESKTOP
+ *  ADS_FOOTER_TOP_MOBILE     Kode iklan footer top MOBILE
  * ═════════════════════════════════════════════════════════════
  */
 
@@ -259,9 +271,23 @@ function getConfig(env, request) {
     ADS_CODE_BTM_M:  env.ADS_CODE_BTM_M  || '',
     ADS_CODE_SDB_D:  env.ADS_CODE_SDB_D  || '',
     ADS_CODE_SDB_M:  env.ADS_CODE_SDB_M  || '',
-    // ── NEW: Slot khusus popunder ───────────────────────────────────
+    // ── Slot khusus popunder ───────────────────────────────────
     ADS_CODE_POPUNDER_D: env.ADS_CODE_POPUNDER_D || '',
     ADS_CODE_POPUNDER_M: env.ADS_CODE_POPUNDER_M || '',
+    // ── Slot iklan baru ───────────────────────────────────────
+    ADS_HEADER_TOP_DESKTOP: env.ADS_HEADER_TOP_DESKTOP || '',
+    ADS_HEADER_TOP_MOBILE: env.ADS_HEADER_TOP_MOBILE || '',
+    ADS_MID_GRID_DESKTOP: env.ADS_MID_GRID_DESKTOP || '',
+    ADS_MID_GRID_MOBILE: env.ADS_MID_GRID_MOBILE || '',
+    ADS_AFTER_GRID_DESKTOP: env.ADS_AFTER_GRID_DESKTOP || '',
+    ADS_AFTER_GRID_MOBILE: env.ADS_AFTER_GRID_MOBILE || '',
+    ADS_SIDEBAR_TOP_DESKTOP: env.ADS_SIDEBAR_TOP_DESKTOP || '',
+    ADS_SIDEBAR_TOP_MOBILE: env.ADS_SIDEBAR_TOP_MOBILE || '',
+    ADS_AFTER_CONTENT_DESKTOP: env.ADS_AFTER_CONTENT_DESKTOP || '',
+    ADS_AFTER_CONTENT_MOBILE: env.ADS_AFTER_CONTENT_MOBILE || '',
+    ADS_FOOTER_TOP_DESKTOP: env.ADS_FOOTER_TOP_DESKTOP || '',
+    ADS_FOOTER_TOP_MOBILE: env.ADS_FOOTER_TOP_MOBILE || '',
+    
     CONTACT_EMAIL:         env.CONTACT_EMAIL      || ('admin@' + domain),
     CONTACT_EMAIL_NAME:    env.CONTACT_EMAIL_NAME || (name + ' Admin'),
 
@@ -1260,7 +1286,7 @@ class SeoHelper {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// SECTION 15 — ADS / BANNER SYSTEM (FIXED)
+// SECTION 15 — ADS / BANNER SYSTEM (FIXED + ENHANCED)
 // ═══════════════════════════════════════════════════════════════════════
 
 /**
@@ -1281,13 +1307,38 @@ function getAdsSlots(cfg) {
   const ck = cfg.ADS_ADSENSE_CLIENT+':'+cfg.WARUNG_DOMAIN;
   if (_adsSlotsCache.has(ck)) return _adsSlotsCache.get(ck);
 
-  const tD = cfg.ADS_CODE_TOP_D, tM = cfg.ADS_CODE_TOP_M;
-  const bD = cfg.ADS_CODE_BTM_D, bM = cfg.ADS_CODE_BTM_M;
-  const sD = cfg.ADS_CODE_SDB_D, sM = cfg.ADS_CODE_SDB_M;
-  const pD = cfg.ADS_CODE_POPUNDER_D, pM = cfg.ADS_CODE_POPUNDER_M; // Slot popunder
+  // Ambil semua kode iklan dari environment variables
+  // Gunakan nilai yang sudah ada atau string kosong jika tidak ada
+  const tD = cfg.ADS_CODE_TOP_D || '';
+  const tM = cfg.ADS_CODE_TOP_M || '';
+  const bD = cfg.ADS_CODE_BTM_D || '';
+  const bM = cfg.ADS_CODE_BTM_M || '';
+  const sD = cfg.ADS_CODE_SDB_D || '';
+  const sM = cfg.ADS_CODE_SDB_M || '';
+  const pD = cfg.ADS_CODE_POPUNDER_D || '';
+  const pM = cfg.ADS_CODE_POPUNDER_M || '';
+  
+  // Ambil kode iklan baru dari environment (jika ada)
+  const hD = cfg.ADS_HEADER_TOP_DESKTOP || tD; // Fallback ke top desktop jika tidak ada
+  const hM = cfg.ADS_HEADER_TOP_MOBILE || tM; // Fallback ke top mobile jika tidak ada
+  
+  const mGD = cfg.ADS_MID_GRID_DESKTOP || tD; // Fallback ke top desktop
+  const mGM = cfg.ADS_MID_GRID_MOBILE || tM; // Fallback ke top mobile
+  
+  const aGD = cfg.ADS_AFTER_GRID_DESKTOP || bD; // Fallback ke bottom desktop
+  const aGM = cfg.ADS_AFTER_GRID_MOBILE || bM; // Fallback ke bottom mobile
+  
+  const sTD = cfg.ADS_SIDEBAR_TOP_DESKTOP || sD; // Fallback ke sidebar desktop
+  const sTM = cfg.ADS_SIDEBAR_TOP_MOBILE || sM; // Fallback ke sidebar mobile
+  
+  const aCD = cfg.ADS_AFTER_CONTENT_DESKTOP || bD; // Fallback ke bottom desktop
+  const aCM = cfg.ADS_AFTER_CONTENT_MOBILE || bM; // Fallback ke bottom mobile
+  
+  const fTD = cfg.ADS_FOOTER_TOP_DESKTOP || bD; // Fallback ke bottom desktop
+  const fTM = cfg.ADS_FOOTER_TOP_MOBILE || bM; // Fallback ke bottom mobile
 
   const slots = {
-    // Slot reguler dengan nonce
+    // Slot reguler dengan nonce (untuk kompatibilitas backward)
     header_top:    { enabled:true, type:'html', code_desktop:tD, code_mobile:tM, label:true,        align:'center', margin:'0 0 4px', bypassCSP: false },
     before_grid:   { enabled:true, type:'html', code_desktop:tD, code_mobile:tM, label:'Sponsored', align:'center', margin:'8px 0 16px', bypassCSP: false },
     mid_grid:      { enabled:true, type:'html', code_desktop:tD, code_mobile:tM, label:'Iklan',     align:'center', margin:'4px 0', insert_after:6, bypassCSP: false },
@@ -1297,6 +1348,24 @@ function getAdsSlots(cfg) {
     sidebar_bottom:{ enabled:true, type:'html', code_desktop:sD, code_mobile:sM, label:true,        align:'center', margin:'0', bypassCSP: false },
     after_content: { enabled:true, type:'html', code_desktop:bD, code_mobile:bM, label:true,        align:'center', margin:'24px 0', bypassCSP: false },
     footer_top:    { enabled:true, type:'html', code_desktop:bD, code_mobile:bM, label:true,        align:'center', margin:'0', bypassCSP: false },
+    
+    // Slot baru - HEADER TOP khusus
+    header_top_new:    { enabled:true, type:'html', code_desktop:hD, code_mobile:hM, label:'Header', align:'center', margin:'0 0 4px', bypassCSP: false },
+    
+    // Slot baru - MID GRID khusus
+    mid_grid_new:      { enabled:true, type:'html', code_desktop:mGD, code_mobile:mGM, label:'Iklan', align:'center', margin:'4px 0', insert_after:6, bypassCSP: false },
+    
+    // Slot baru - AFTER GRID khusus
+    after_grid_new:    { enabled:true, type:'html', code_desktop:aGD, code_mobile:aGM, label:true, align:'center', margin:'16px 0 8px', bypassCSP: false },
+    
+    // Slot baru - SIDEBAR TOP khusus
+    sidebar_top_new:   { enabled:true, type:'html', code_desktop:sTD, code_mobile:sTM, label:true, align:'center', margin:'0 0 16px', bypassCSP: false },
+    
+    // Slot baru - AFTER CONTENT khusus
+    after_content_new: { enabled:true, type:'html', code_desktop:aCD, code_mobile:aCM, label:true, align:'center', margin:'24px 0', bypassCSP: false },
+    
+    // Slot baru - FOOTER TOP khusus
+    footer_top_new:    { enabled:true, type:'html', code_desktop:fTD, code_mobile:fTM, label:true, align:'center', margin:'0', bypassCSP: false },
     
     // Slot popunder khusus — bypass CSP & sanitasi
     popunder:      { enabled:true, type:'html', code_desktop:pD, code_mobile:pM, label:false,       align:'center', margin:'0', bypassCSP: true },
@@ -1374,10 +1443,10 @@ function renderBanner(name, cfg, request=null, nonce='', bypassCSP=false) {
 
 function renderBannerMidGrid(index, cfg, request=null, nonce='') {
   if (!cfg.ADS_ENABLED) return '';
-  const slot=getAdsSlots(cfg)['mid_grid'];
+  const slot=getAdsSlots(cfg)['mid_grid_new']; // Gunakan slot baru
   if (!slot||!slot.enabled) return '';
   // renderGrid sudah memanggil ini hanya saat i%6===5
-  return renderBanner('mid_grid', cfg, request, nonce);
+  return renderBanner('mid_grid_new', cfg, request, nonce);
 }
 
 function bannerStyles() {
@@ -1387,9 +1456,11 @@ function bannerStyles() {
 .ads-desktop{display:block}.ads-mobile{display:none}
 @media(max-width:767px){.ads-desktop{display:none}.ads-mobile{display:block}}
 .ad-slot ins,.ad-slot iframe,.ad-slot img{max-width:100%!important;width:auto!important}
-.content-grid>li>.ad-slot--mid_grid,.content-grid>.ad-slot--mid_grid{grid-column:1/-1;width:100%}
-.ad-slot--header_top{min-height:50px}.ad-slot--before_grid,.ad-slot--after_grid{min-height:60px}
-.ad-slot--sidebar_top,.ad-slot--sidebar_mid{min-height:100px}
+.content-grid>li>.ad-slot--mid_grid_new,.content-grid>.ad-slot--mid_grid_new{grid-column:1/-1;width:100%}
+.ad-slot--header_top_new{min-height:50px}.ad-slot--before_grid,.ad-slot--after_grid_new{min-height:60px}
+.ad-slot--sidebar_top_new,.ad-slot--sidebar_mid{min-height:100px}
+.ad-slot--after_content_new{min-height:90px;margin:20px 0}
+.ad-slot--footer_top_new{min-height:50px;margin:10px 0}
 </style>`;
 }
 
@@ -1963,7 +2034,7 @@ function renderFooter(cfg, request=null, nonce='') {
   // Render popunder dengan bypassCSP=true
   const popunder = renderBanner('popunder', cfg, request, nonce, true);
   
-  return `${renderBanner('footer_top', cfg, request, nonce)}
+  return `${renderBanner('footer_top_new', cfg, request, nonce)} <!-- Menggunakan slot footer baru -->
 <!-- FOOTER -->
 <footer class="footer">
   <div class="footer-grid">
@@ -2306,9 +2377,12 @@ async function handleHome(request, cfg, client, seo) {
   if (!items.length) {
     contentSection=`<div class="empty-state"><i class="fas fa-folder-open"></i><p>Tidak ada konten tersedia saat ini.</p></div>`;
   } else {
-    contentSection=renderBanner('before_grid',cfg,request,adNonce)+renderGrid(items,cfg,true,request,adNonce)
+    contentSection=renderBanner('header_top_new',cfg,request,adNonce) // Menggunakan slot header baru
+      +renderBanner('before_grid',cfg,request,adNonce)
+      +renderGrid(items,cfg,true,request,adNonce)
       +(cfg.THEME_SHOW_PROMO?`<div class="promo-banner"><i class="fas fa-crown"></i> ${h(cfg.THEME_PROMO_TEXT)} <i class="fas fa-crown"></i></div>`:'')
-      +renderBanner('after_grid',cfg,request,adNonce)+renderPagination(pagination, p=>{
+      +renderBanner('after_grid_new',cfg,request,adNonce) // Menggunakan slot after grid baru
+      +renderPagination(pagination, p=>{
         const params=new URLSearchParams();
         if (type) params.set('type',type);
         if (isTrending) params.set('trending','1');
@@ -2398,12 +2472,13 @@ ${tagsHtml}${descHtml}
   const breadcrumbHtml=renderBreadcrumb([{name:'Beranda',url:homeUrl(cfg)},{name:ucfirst(type),url:categoryUrl(type,1,cfg)},{name:mbSubstr(media.title,0,40),url:null}],cfg);
   const main=`<main id="main-content" class="view-main"><div class="view-layout">
 <article class="view-content">
-  ${breadcrumbHtml}${playerHtml}${contentInfo}${renderBanner('after_content',cfg,request,adNonce)}
+  ${breadcrumbHtml}${playerHtml}${contentInfo}${renderBanner('after_content_new',cfg,request,adNonce)} <!-- Menggunakan slot after content baru -->
 </article>
 <aside class="view-sidebar">
   <h2 class="widget-title"><i class="fas fa-layer-group"></i> Konten Terkait</h2>
   ${relatedHtml}
   ${popularTags?`<section><h3 class="widget-title" style="margin-top:16px"><i class="fas fa-tags"></i> Tag</h3><div class="tag-cloud">${popularTags}</div></section>`:''}
+  ${renderBanner('sidebar_top_new',cfg,request,adNonce)} <!-- Menggunakan slot sidebar baru -->
 </aside>
 </div></main>${lightboxHtml}${pageScript}`;
   return new Response(head+nav+main+renderFooter(cfg,request,adNonce), { status:200, headers:htmlHeaders(cfg,'article') });
@@ -2453,7 +2528,11 @@ ${filterTabs}
   else {
     const from=(page-1)*cfg.ITEMS_PER_PAGE+1, to=Math.min(page*cfg.ITEMS_PER_PAGE,total);
     contentSection=`<div class="search-stats"><i class="fas fa-layer-group"></i> Menampilkan <strong>${from}–${to}</strong> dari <strong>${numberFormat(total)}</strong> hasil</div>`
-      +renderBanner('before_grid',cfg,request,adNonce)+renderGrid(items,cfg,true,request,adNonce)+renderBanner('after_grid',cfg,request,adNonce)+renderPagination(pagination, p=>filterUrl(type,p));
+      +renderBanner('header_top_new',cfg,request,adNonce) // Menggunakan slot header baru
+      +renderBanner('before_grid',cfg,request,adNonce)
+      +renderGrid(items,cfg,true,request,adNonce)
+      +renderBanner('after_grid_new',cfg,request,adNonce) // Menggunakan slot after grid baru
+      +renderPagination(pagination, p=>filterUrl(type,p));
   }
   const allTags={};
   items.forEach(item=>(item.tags||[]).forEach(t=>{allTags[t]=(allTags[t]||0)+1;}));
@@ -2500,7 +2579,11 @@ ${filterTabs}</div></div>`;
   let contentSection='';
   if (errorMsg) contentSection=`<div class="no-results"><div class="no-results-icon"><i class="fas fa-exclamation-triangle"></i></div><h2>Terjadi Kesalahan</h2><p>${h(errorMsg)}</p><div class="no-results-actions"><a href="${homeUrl(cfg)}" class="btn btn-outline"><i class="fas fa-home"></i> Beranda</a></div></div>`;
   else if (!items.length) contentSection=`<div class="no-results"><div class="no-results-icon"><i class="fas fa-tag"></i></div><h2>Tag "${h(tag)}" tidak ditemukan</h2><p>Belum ada konten dengan tag ini.</p><div class="no-results-actions"><a href="${homeUrl(cfg)}" class="btn btn-outline"><i class="fas fa-home"></i> Beranda</a></div></div>`;
-  else contentSection=renderBanner('before_grid',cfg,request,adNonce)+renderGrid(items,cfg,true,request,adNonce)+renderBanner('after_grid',cfg,request,adNonce)+renderPagination(pagination, p=>tagFilterUrl(type,p));
+  else contentSection=renderBanner('header_top_new',cfg,request,adNonce) // Menggunakan slot header baru
+    +renderBanner('before_grid',cfg,request,adNonce)
+    +renderGrid(items,cfg,true,request,adNonce)
+    +renderBanner('after_grid_new',cfg,request,adNonce) // Menggunakan slot after grid baru
+    +renderPagination(pagination, p=>tagFilterUrl(type,p));
   const main=`${tagHeader}<main id="main-content"><div class="container"><div class="layout-main">
 <section class="content-area">${contentSection}</section>
 </div></div></main>`;
@@ -2539,7 +2622,11 @@ ${pagination.total?`<p class="page-desc">${numberFormat(pagination.total)} konte
 </div></div>`;
   let contentSection='';
   if (!items.length) contentSection=`<div class="empty-state"><i class="fas fa-folder-open"></i><p>Tidak ada konten ${h(typeLabel.toLowerCase())} saat ini.</p></div>`;
-  else contentSection=renderBanner('before_grid',cfg,request,adNonce)+renderGrid(items,cfg,true,request,adNonce)+renderBanner('after_grid',cfg,request,adNonce)+renderPagination(pagination, p=>'/'+cfg.PATH_CATEGORY+'/'+type+(p>1?'/'+p:''));
+  else contentSection=renderBanner('header_top_new',cfg,request,adNonce) // Menggunakan slot header baru
+    +renderBanner('before_grid',cfg,request,adNonce)
+    +renderGrid(items,cfg,true,request,adNonce)
+    +renderBanner('after_grid_new',cfg,request,adNonce) // Menggunakan slot after grid baru
+    +renderPagination(pagination, p=>'/'+cfg.PATH_CATEGORY+'/'+type+(p>1?'/'+p:''));
   const main=`${pageHeader}<main id="main-content"><div class="container"><div class="layout-main">
 <section class="content-area">${contentSection}</section>
 </div></div></main>`;
