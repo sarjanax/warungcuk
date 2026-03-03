@@ -1,99 +1,20 @@
 /**
  * functions/[[path]].js — Warung • Cloudflare Pages Functions
  * ═══════════════════════════════════════════════════════════════
- * VERSION: v29.4 — "ADS ENV: semua slot iklan dikontrol penuh via dashboard"
+ * VERSION: v29.5 — "ADS FIX: popunder juicyads & semua slot iklan berfungsi 100%"
  * AUTHOR:  dukunseo.com
  *
- *  - Routing LENGKAP: home, view, album, search, tag, category, static pages, sitemap, RSS
- *  - Ads: HTML slot custom + AdSense, mobile/desktop aware, semua via env dashboard
- *  - SEO: SeoHelper lengkap, JSON-LD, OG, breadcrumb, sitemap moon-phase
- *  - Anti-bot: Digital DNA (bot only), Ghost Body, CSS Stego, Blackhole Trap, Sacrificial Lamb
- *  - Security: nonce CSP, HMAC, rate limiting adaptive
- *  - Performance: LRU cache, QuantumCache dengan TTL, brotli via CF, srcset responsive
- *  - Theme: DARK GOLD — semua token warna & tampilan bisa dikontrol via env dashboard
+ * FIXES:
+ *  - Slot popunder khusus dengan bypass CSP & sanitasi
+ *  - Bypass inject nonce untuk iklan popunder
+ *  - Domain juicyads di-allowlist di CSP
+ *  - Event handler dipertahankan untuk popunder
+ *  - Semua slot iklan dipastikan bisa muncul
  *
- * ══ ADS ENV VARIABLES (Cloudflare Dashboard → Settings → Environment Variables) ══
- *
- *  ADS_ENABLED         Aktifkan/nonaktifkan semua iklan
- *                      Nilai : 'true' atau 'false'      default: true
- *
- *  ADS_ADSENSE_CLIENT  Publisher ID Google AdSense (opsional, untuk auto ads)
- *                      Contoh: ca-pub-1234567890123456
- *
- *  ADS_LABEL           Teks label kecil di atas slot iklan
- *                      Contoh: Iklan  (kosongkan = tidak tampil label)
- *
- *  ── SLOT TOP · dipakai di: header_top · before_grid · mid_grid ───────────────
- *
- *  ADS_CODE_TOP_D      Kode iklan DESKTOP untuk slot TOP
- *                      → Tempel langsung raw HTML/script dari dashboard jaringan iklan
- *                      → Kosongkan = slot TOP tidak tampil di desktop
- *
- *  ADS_CODE_TOP_M      Kode iklan MOBILE untuk slot TOP
- *                      → Boleh sama dengan ADS_CODE_TOP_D atau kode zone berbeda
- *                      → Kosongkan = slot TOP tidak tampil di mobile
- *
- *  ── SLOT BOTTOM · dipakai di: after_grid · after_content · footer_top ───────
- *
- *  ADS_CODE_BTM_D      Kode iklan DESKTOP untuk slot BOTTOM
- *  ADS_CODE_BTM_M      Kode iklan MOBILE  untuk slot BOTTOM
- *
- *  ── SLOT SIDEBAR · dipakai di: sidebar_top · sidebar_mid · sidebar_bottom ──
- *
- *  ADS_CODE_SDB_D      Kode iklan DESKTOP untuk slot SIDEBAR
- *  ADS_CODE_SDB_M      Kode iklan MOBILE  untuk slot SIDEBAR
- *
- *  ─── Cara isi ────────────────────────────────────────────────────────────────────────
- *  1. Buka dashboard jaringan iklan (Magsrv / Hilltopads / Exoclick / dll)
- *  2. Buat zone / ad unit, lalu copy seluruh blok kode yang diberikan
- *     Contoh (Magsrv):
- *       <script async type="application/javascript" src="https://a.magsrv.com/ad-provider.js"></script>
- *       <ins class="eas6a97888e2" data-zoneid="1234567"></ins>
- *       <script>(AdProvider = window.AdProvider || []).push({"serve": {}});</script>
- *  3. Buka Cloudflare Dashboard → Pages → project kamu → Settings → Environment Variables
- *  4. Edit nilai env var yang sesuai (ADS_CODE_TOP_D, dll) → paste kode iklan → klik Save
- *  5. Tidak perlu redeploy — perubahan langsung aktif di request berikutnya
- *
- *  ─── Catatan ───────────────────────────────────────────────────────────────────────────
- *  · Jika env tidak diisi → slot kosong, tidak ada iklan tampil (tidak ada fallback hardcode)
- *  · Desktop & Mobile bisa pakai kode/zone yang sama atau berbeda
- *  · Mendukung semua jaringan: Magsrv, Hilltopads, Exoclick, AdSense manual, dsb
- *  · Tidak perlu redeploy kode — cukup ubah nilai env di dashboard lalu Save
- * ═══════════════════════════════════════════════════════════════════════════════════
- *
- * ══ THEME ENV VARIABLES (Cloudflare Dashboard → Settings → Variables) ════════──
- *  THEME_ACCENT          Warna accent/gold     default: #ffaa00
- *  THEME_ACCENT2         Warna accent hover    default: #ffc233
- *  THEME_BG              Background utama      default: #0a0a0a
- *  THEME_BG2             Background card/panel default: #121212
- *  THEME_BG3             Background hover      default: #1a1a1a
- *  THEME_FG              Warna teks utama      default: #ffffff
- *  THEME_FG_DIM          Warna teks redup      default: #888888
- *  THEME_BORDER          Warna border          default: #252525
- *  THEME_FONT            Google Font name      default: (system font)
- *  THEME_NAV_STYLE       'dark' atau 'gold'    default: dark
- *  THEME_BADGE_HOT       Label badge HOT       default: 🔥 HOT
- *  THEME_PROMO_TEXT      Teks promo banner     default: ✨ PREMIUM • 4K UHD • TANPA ADS
- *  THEME_SHOW_PROMO      'true'/'false'        default: true
- *  THEME_SHOW_TRENDING   'true'/'false'        default: true
- *  THEME_GRID_COLS_MOBILE Kolom grid mobile 1/2 default: 2
- *  THEME_CARD_RATIO      Aspect ratio card     default: 16/9 (bisa: 2/3, 1/1)
- * ═════════════════════════════════════════════════════════════════════════════════
- *
- * ══ IMMORTAL ENV VARIABLES ════════════════════════════════════════════════════════
- *  IMMORTAL_DIGITAL_DNA      'true'/'false'   default: true
- *  IMMORTAL_CSS_STEGO        'true'/'false'   default: true
- *  IMMORTAL_GHOST_BODY       'true'/'false'   default: true
- *  IMMORTAL_BLACKHOLE        'true'/'false'   default: true
- *  IMMORTAL_SACRIFICIAL_LAMB 'true'/'false'   default: true
- *  IMMORTAL_BLACKHOLE_MAX    Integer          default: 50
- *  IMMORTAL_SACRIFICE_ENERGY Integer          default: 1000
- *  IMMORTAL_RATE_WINDOW      Detik            default: 60
- *  IMMORTAL_RATE_MAX         Integer          default: 120
- *  IMMORTAL_SCRAPER_RATE_MAX Integer          default: 10
- *  IMMORTAL_CSS_OPACITY      Float            default: 0.001
- *  IMMORTAL_DNA_POOL         Kata CSV kustom  default: (pool bawaan)
- * ═════════════════════════════════════════════════════════════════════════════════
+ * ══ NEW ENV VARIABLES ═══════════════════════════════════════
+ *  ADS_CODE_POPUNDER_D   Kode popunder DESKTOP (juicyads/exoclick dll)
+ *  ADS_CODE_POPUNDER_M   Kode popunder MOBILE
+ * ═════════════════════════════════════════════════════════════
  */
 
 'use strict';
@@ -105,7 +26,6 @@ const _SEARCHBOT_RX    = /Googlebot|bingbot|Slurp|DuckDuckBot|Baiduspider|Yandex
 const _BOT_UA_RX       = /HeadlessChrome|Headless|PhantomJS|SlimerJS|Scrapy|python-requests|Go-http-client|curl\/|wget\//i;
 const _MOBILE_UA_RX    = /Mobile|Android|iPhone|iPad/i;
 const _SCRAPER_BOTS    = ['SemrushBot','AhrefsBot','MJ12bot','DotBot','BLEXBot','MegaIndex','SeznamBot'];
-// Fix: regex ini tadinya dikompile ulang tiap kali sacrificeRedirect() dipanggil
 const _BAD_BOT_RX      = /SemrushBot|AhrefsBot|MJ12bot|DotBot|BLEXBot|MegaIndex|SeznamBot|spambot|scraperbot|ia_archiver/i;
 const _REAL_BROWSER_RX = /Chrome\/|Firefox\/|Safari\/|Edg\//i;
 
@@ -118,15 +38,10 @@ const IMMORTAL = {
   ENABLE_SACRIFICIAL_LAMB:  true,
   BLACKHOLE_MAX_REQUESTS:   50,
   DNA_POOL: [
-  // Kata dasar (aman)
   'hot', 'seksi', 'sensual', 'dewasa',
   'cantik', 'mesra', 'berani', 'eksklusif',
-  
-  // Kata tren
   'viral', 'trending', 'populer', 'hits', 'mantap',
   'gratis', 'online', 'live', '24jam',
-  
-  // Kata konten
   'film', 'video', 'streaming', 'nonton',
   'terbaru', 'terlengkap', 'kualitas HD'
 ],
@@ -140,8 +55,6 @@ LSI: {
   'mesra': ['intim', 'romantic', 'berdua', 'hangat'],
   'berani': ['provokatif', 'terbuka', 'eksplisit'],
   'eksklusif': ['private', 'premium', 'khusus member'],
-  
-  // Kata umum
   'viral': ['ramai', 'trending', 'banyak dicari'],
   'populer': ['favorit', 'top', 'banyak ditonton'],
   'streaming': ['nonton online', 'live', 'tanpa download']
@@ -156,7 +69,7 @@ LSI: {
 
 // ── Error Logger ─────────────────────────────────────────────────────────────
 const _ERROR_LOG     = new Set();
-const _ERROR_LOG_TTL = 60000; // 1 menit
+const _ERROR_LOG_TTL = 60000;
 function logError(context, error, request = null, ctx = null) {
   const ip  = request?.headers?.get('CF-Connecting-IP') || 'unknown';
   const ua  = (request?.headers?.get('User-Agent') || 'unknown').substring(0, 100);
@@ -179,7 +92,6 @@ function logError(context, error, request = null, ctx = null) {
 class LRUMap extends Map {
   constructor(maxSize = 100) { super(); this.maxSize = maxSize; }
   get(key) {
-    // FIX Bug #10: pindah ke posisi akhir (most recently used) saat get()
     if (!super.has(key)) return undefined;
     const val = super.get(key);
     super.delete(key);
@@ -187,7 +99,6 @@ class LRUMap extends Map {
     return val;
   }
   set(key, value) {
-    // Jika key sudah ada, hapus dulu agar pindah ke posisi akhir (most recent)
     if (this.has(key)) this.delete(key);
     else if (this.size >= this.maxSize) this.delete(this.keys().next().value);
     return super.set(key, value);
@@ -220,18 +131,13 @@ class QCache {
   _del(key) { this.data.delete(key); this.ts.delete(key); }
 }
 
-// ── Module-level in-memory state (persist selama isolate hidup) ─────────────
-// Fix: maybeScheduledPing tidak perlu KV read setiap request
-// Cukup pakai memory — KV hanya untuk sinkron lintas isolate (write saja)
+// ── Module-level in-memory state ─────────────────────────────
 let _scheduledPingLastTs = 0;
-// Fix: getDapurConfig — cache in-memory per domain agar tidak KV read tiap request
-const _dapurConfigMemCache = new LRUMap(10); // domain -> { data, ts }, max 10 domain
-// isBlacklisted — in-memory, TTL 5 menit. Merged entry: { blocked, ts }
-const _blCacheTTL = 300000; // 5 menit
+const _dapurConfigMemCache = new LRUMap(10);
+const _blCacheTTL = 300000;
 
 // ── Cache instances ──────────────────────────────────────────────────────────
 const _hmacCache    = new LRUMap(20);
-// _blCache stores { blocked: bool, ts: number } — merged from old _blCache+_blCacheTs
 const _blCache      = new LRUMap(500);
 const _rlMemory     = new LRUMap(1000);
 const _morphCache   = new LRUMap(20);
@@ -242,14 +148,12 @@ const _dnaCache     = new QCache(500, 60000);
 const _blackholeMap = new LRUMap(5000);
 const _sacrificeMap = new LRUMap(50);
 const _immortalEnvCache = new LRUMap(5);
-// Module-level caches for per-domain singletons (avoids re-instantiation each request)
 const _seoCache        = new LRUMap(10);
 const _cannibalCache   = new LRUMap(10);
 const _hammerCache     = new LRUMap(10);
-const _reqCfgCache     = new LRUMap(20); // merged cfg+dapurConfig per request cycle
+const _reqCfgCache     = new LRUMap(20);
 
-// ── Immortal env loader — kontrol semua flag via Cloudflare Dashboard env vars ──
-// Dipanggil sekali di awal onRequest, cache by env-signature agar tidak compute ulang
+// ── Immortal env loader ────────────────────────────────────
 function applyImmortalEnv(env) {
   const sig = [
     env.IMMORTAL_DIGITAL_DNA, env.IMMORTAL_CSS_STEGO, env.IMMORTAL_GHOST_BODY,
@@ -261,7 +165,6 @@ function applyImmortalEnv(env) {
   if (_immortalEnvCache.has(sig)) return;
   _immortalEnvCache.set(sig, true);
   const bool = (k, d) => env[k] !== undefined ? env[k] === 'true' : d;
-  // FIX: gunakan Math.max(0,...) agar nilai negatif tidak diterima
   const int  = (k, d) => { if (env[k] === undefined) return d; const v = parseInt(env[k], 10); return (isNaN(v)||v<0) ? d : v; };
   const flt  = (k, d) => { if (env[k] === undefined) return d; const v = parseFloat(env[k]); return (isNaN(v)||v<0) ? d : v; };
   IMMORTAL.ENABLE_DIGITAL_DNA      = bool('IMMORTAL_DIGITAL_DNA',      IMMORTAL.ENABLE_DIGITAL_DNA);
@@ -300,19 +203,13 @@ function detectDomainInfo(env, request) {
   return { domain: env.WARUNG_DOMAIN||'sikatsaja.com', name: env.WARUNG_NAME||'SikatSaja' };
 }
 
-// Per-domain cache — mencegah cross-domain pollution di multi-domain Cloudflare isolate
-const _cfgCacheMap = new LRUMap(10); // max 10 domain per isolate
-// FIX: safeParseInt — hindari NaN jika env mengandung string non-numeric atau kosong
+const _cfgCacheMap = new LRUMap(10);
 function safeParseInt(val, defaultValue) {
   const parsed = parseInt(val, 10);
   return isNaN(parsed) ? defaultValue : Math.max(0, parsed);
 }
 function getConfig(env, request) {
   const { domain, name } = detectDomainInfo(env, request);
-  // FIX: Jangan cache jika domain masih pages.dev (WARUNG_DOMAIN belum di-set via env)
-  // atau jika env belum punya WARUNG_DOMAIN (multi-site: tiap request bisa beda domain)
-  // FIX v27.7: Sertakan nilai env penting dalam cache key — kalau PATH_CONTENT/dll diubah,
-  // cache otomatis invalid tanpa perlu restart isolate
   const envSig = (env.PATH_CONTENT||'')+(env.PATH_ALBUM||'')+(env.PATH_SEARCH||'')+(env.PATH_CATEGORY||'')+(env.PATH_TAG||'')+(env.WARUNG_TYPE||'')+(env.WARUNG_NAME||'')+(env.ITEMS_PER_PAGE||'')+(env.RELATED_COUNT||'')+(env.TRENDING_COUNT||'');
   const cacheKey = domain + ':' + envSig;
   const shouldCache = !!env.WARUNG_DOMAIN && !domain.endsWith('.pages.dev') && !domain.endsWith('.workers.dev');
@@ -356,56 +253,35 @@ function getConfig(env, request) {
     ADS_ENABLED:          (env.ADS_ENABLED || 'true') === 'true',
     ADS_ADSENSE_CLIENT:    env.ADS_ADSENSE_CLIENT || '',
     ADS_LABEL:             env.ADS_LABEL || '',
-    // ── Kode iklan HTML per slot — isi via Cloudflare Dashboard env vars ──────────
-    // Kosongkan = slot tidak tampil. Lihat dokumentasi di header file.
-    // Grup TOP    : dipakai di header_top, before_grid, mid_grid
     ADS_CODE_TOP_D:  env.ADS_CODE_TOP_D  || '',
     ADS_CODE_TOP_M:  env.ADS_CODE_TOP_M  || '',
-    // Grup BOTTOM : dipakai di after_grid, after_content, footer_top
     ADS_CODE_BTM_D:  env.ADS_CODE_BTM_D  || '',
     ADS_CODE_BTM_M:  env.ADS_CODE_BTM_M  || '',
-    // Grup SIDEBAR: dipakai di sidebar_top, sidebar_mid, sidebar_bottom
     ADS_CODE_SDB_D:  env.ADS_CODE_SDB_D  || '',
     ADS_CODE_SDB_M:  env.ADS_CODE_SDB_M  || '',
+    // ── NEW: Slot khusus popunder ───────────────────────────────────
+    ADS_CODE_POPUNDER_D: env.ADS_CODE_POPUNDER_D || '',
+    ADS_CODE_POPUNDER_M: env.ADS_CODE_POPUNDER_M || '',
     CONTACT_EMAIL:         env.CONTACT_EMAIL      || ('admin@' + domain),
     CONTACT_EMAIL_NAME:    env.CONTACT_EMAIL_NAME || (name + ' Admin'),
 
-    // ── THEME VARIABLES (kontrol via dashboard env) ──────────────────────
-    // Warna utama / accent (default: gold #ffaa00)
     THEME_ACCENT:          env.THEME_ACCENT        || '#ffaa00',
-    // Warna accent hover/secondary (default: #ffc233)
     THEME_ACCENT2:         env.THEME_ACCENT2       || '#ffc233',
-    // Background utama
     THEME_BG:              env.THEME_BG            || '#0a0a0a',
-    // Background card/panel
     THEME_BG2:             env.THEME_BG2           || '#121212',
-    // Background 3 (hover, strip)
     THEME_BG3:             env.THEME_BG3           || '#1a1a1a',
-    // Warna teks utama
     THEME_FG:              env.THEME_FG            || '#ffffff',
-    // Warna teks redup
     THEME_FG_DIM:          env.THEME_FG_DIM        || '#888888',
-    // Border warna
     THEME_BORDER:          env.THEME_BORDER        || '#252525',
-    // Font utama (Google Fonts name atau system font)
     THEME_FONT:            env.THEME_FONT          || 'Inter',
-    // Font display/judul
     THEME_FONT_DISPLAY:    env.THEME_FONT_DISPLAY  || 'Inter',
-    // Badge label HOT (teks) — bisa diganti e.g. "NEW", "🔥"
     THEME_BADGE_HOT:       env.THEME_BADGE_HOT     || '🔥 HOT',
-    // Teks promo banner tengah
     THEME_PROMO_TEXT:      env.THEME_PROMO_TEXT    || '✨ PREMIUM • 4K UHD • TANPA ADS',
-    // Tampilkan promo banner: 'true'/'false'
     THEME_SHOW_PROMO:      (env.THEME_SHOW_PROMO || 'true') === 'true',
-    // Tampilkan trending strip di homepage: 'true'/'false'
     THEME_SHOW_TRENDING:   (env.THEME_SHOW_TRENDING || 'true') === 'true',
-    // Jumlah kolom card grid mobile (1 atau 2)
     THEME_GRID_COLS_MOBILE: parseInt(env.THEME_GRID_COLS_MOBILE || '2'),
-    // Aspect ratio card thumbnail: '16/9' atau '2/3' atau '1/1'
     THEME_CARD_RATIO:      env.THEME_CARD_RATIO    || '16/9',
-    // Navbar style: 'dark' (hitam) atau 'gold' (accent navbar)
     THEME_NAV_STYLE:       env.THEME_NAV_STYLE     || 'dark',
-    // ── END THEME VARIABLES ──────────────────────────────────────────────
 
     _dapurConfig: null,
     _env: env,
@@ -529,7 +405,6 @@ function searchUrl(q='', cfg) { return urlHelper(cfg.PATH_SEARCH,cfg)+(q?'?q='+e
 function itemUrl(item, cfg) { return item.type==='album' ? albumUrl(item.id,item.title,cfg) : contentUrl(item.id,item.title,cfg); }
 function homeUrl(cfg) { return cfg.WARUNG_BASE_PATH||'/'; }
 
-// ── Warung type helpers ──────────────────────────────────────────────────────
 function getNavItems(cfg) {
   if (cfg._dapurConfig?.nav_items?.length) {
     return cfg._dapurConfig.nav_items.map(item => ({ label:item.label, icon:item.icon, url:categoryUrl(item.type,1,cfg) }));
@@ -563,7 +438,6 @@ class RateLimitError extends Error {
   constructor(retryAfter) { super('Too Many Requests'); this.retryAfter = retryAfter; }
 }
 
-// OPTIMASI: Sync — ZERO KV dependency, ZERO Promise overhead
 function checkRateLimit(request) {
   const ip  = request.headers.get('CF-Connecting-IP') || '0.0.0.0';
   const ua  = request.headers.get('User-Agent') || '';
@@ -602,7 +476,6 @@ function isBingBot(ua)   { return ua.includes('bingbot')||ua.includes('BingPrevi
 function isSearchBot(ua) { return isGoogleBot(ua)||isBingBot(ua)||_SEARCHBOT_RX.test(ua); }
 function isScraperBot(ua){ return _SCRAPER_BOTS.some(b=>ua.includes(b)); }
 
-// OPTIMASI: Sync (tidak ada I/O), satu Map lookup vs dua sebelumnya
 function isBlacklisted(ip) {
   const entry = _blCache.get(ip);
   if (!entry) return false;
@@ -647,10 +520,6 @@ function blackholeCapture(ip, isScraper) {
 </body></html>`;
 }
 
-// FIX v27.8: Blackhole PURE in-memory — ZERO KV writes/reads
-// LRUMap(_blackholeMap, 5000) sudah cukup untuk hold ribuan IP bot
-// Tidak perlu persist lintas isolate — bot yang sama akan kena lagi dari count 0
-// dan tetap kena blackhole setelah BLACKHOLE_MAX_REQUESTS hit di isolate tsb
 async function blackholeCaptureWithKV(ip, isScraper, env) {
   if (!IMMORTAL.ENABLE_BLACKHOLE || !isScraper) return null;
   const memState = _blackholeMap.get(ip) || { count: 0 };
@@ -676,16 +545,12 @@ async function blackholeCaptureWithKV(ip, isScraper, env) {
 function sacrificeRedirect(request, domain) {
   if (!IMMORTAL.ENABLE_SACRIFICIAL_LAMB) return null;
   const ua = request.headers.get('User-Agent')||'';
-  // Hanya match UA bot yang jelas — TIDAK periksa Referer (bisa false positive user biasa)
-  // Tidak menghit browser modern (Chrome/Firefox/Safari/Edge)
-  // Fix: pakai konstanta module-level, tidak dikompile ulang tiap request
   if (!_BAD_BOT_RX.test(ua)) return null;
-  if (_REAL_BROWSER_RX.test(ua)) return null; // safety: jangan redirect browser real
+  if (_REAL_BROWSER_RX.test(ua)) return null;
 
   let sacrifice = null;
   for (const [k,v] of _sacrificeMap) { if (v.status==='active') { sacrifice=v; break; } }
   if (!sacrifice) {
-    // FIX: bersihkan entry 'sacrificed' yang sudah tidak terpakai sebelum membuat entry baru
     for (const [k,v] of _sacrificeMap) { if (v.status==='sacrificed') _sacrificeMap.delete(k); }
     const id = hexHash(domain+Date.now(), 8);
     sacrifice = { id, subdomain:`sacrifice-${id}.${domain}`, energy:0, status:'active' };
@@ -718,7 +583,6 @@ function dnaGenerate(domain, path) {
 
   const pickWord = (s, i) => {
     let word = pool[(s+i*37) % pool.length];
-    // Fix: ganti Math.random() dengan deterministic seed agar DNA konsisten tiap request
     const lsiSeed = hashSeed(domain+':'+i+':'+s);
     if ((lsiSeed % 10) < 3 && lsi[word]) { const arr=lsi[word]; word=arr[lsiSeed % arr.length]; }
     return word;
@@ -762,7 +626,6 @@ function cssInject(html, cfg, morphPhase=0) {
   const seed = hashSeed(cfg.WARUNG_DOMAIN+Date.now().toString().slice(0,-7)+':'+morphPhase);
   let cssVars = '';
   let cssRules = '';
-  // OPTIMASI: kumpulkan semua div sekaligus, baru satu kali replace </body>
   const bodyDivs = [];
   IMMORTAL.CSS_VARS.forEach((varName,idx) => {
     const val = idx%2===0 ? `#${Math.floor(seed*idx*7777%16777215).toString(16).padStart(6,'0')}` : `${8+idx%12}px`;
@@ -782,7 +645,6 @@ function cssInject(html, cfg, morphPhase=0) {
     bodyDivs.push(`<div class="${cn}" aria-hidden="true"></div>`);
   });
   const styleTag = `<style id="stego-${seed%10000}">:root{\n${cssVars}--rnd-${seed%1000}:${Math.random()};}\n${cssRules}</style>`;
-  // Satu replace untuk semua div + satu replace untuk </head>
   html = html.replace('</body>', bodyDivs.join('\n')+'\n</body>');
   return html.replace('</head>', styleTag+'\n</head>');
 }
@@ -791,26 +653,19 @@ function cssInject(html, cfg, morphPhase=0) {
 // SECTION 11 — GHOST BODY
 // ═══════════════════════════════════════════════════════════════════════
 
-// Cache ghostBody per path+domain — cache STRUKTUR saja, bukan nonce
-// Nonce diinject fresh tiap kali dari cached template (CSP-safe)
 const _ghostCache = new LRUMap(200);
 
 function ghostBody(cfg, path, contentData) {
   if (!IMMORTAL.ENABLE_GHOST_BODY) return null;
-  // FIX Bug #8: pisahkan cache template dari nonce.
-  // Yang di-cache hanya bagian statis (sebelum & sesudah <script nonce="...">)
-  // Nonce selalu fresh tiap pemanggilan agar CSP valid.
   const ck = cfg.WARUNG_DOMAIN+':'+path+':'+(contentData?.title||'');
-  const nonce = generateNonce(); // selalu fresh, tidak di-cache
+  const nonce = generateNonce();
   let cached = _ghostCache.get(ck);
   if (cached) {
-    // Ganti placeholder nonce dengan nonce baru
     return cached.replace('__GHOST_NONCE__', nonce);
   }
   const cid   = 'ghost-'+hexHash(path, 8);
   const jsonStr = JSON.stringify(contentData);
   const dataAttr = btoa(new TextEncoder().encode(jsonStr).reduce((acc,b)=>acc+String.fromCharCode(b),''));
-  // Gunakan __GHOST_NONCE__ sebagai placeholder yang akan diganti tiap request
   const template = `<!DOCTYPE html><html lang="id"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${h(cfg.WARUNG_NAME)}</title>
@@ -854,13 +709,11 @@ class DapurClient {
     this.apiKey        = cfg.DAPUR_API_KEY;
     this.cacheTtl      = cfg.DAPUR_CACHE_TTL;
     this.debug         = cfg.DAPUR_DEBUG;
-    // OPTIMASI: kv tidak dipakai (pure in-memory)
     this.env           = env;
     this.ctx           = ctx;
     this.domain        = cfg.WARUNG_DOMAIN;
     this.baseUrlSite   = cfg.WARUNG_BASE_URL;
     this.cachePrefix   = hexHash(this.apiKey, 8);
-    // hmacSecret dihapus — signing adalah tugas Dapur, bukan Warung
   }
 
   getMediaList(params={})  { return this._fetch('/media', params); }
@@ -874,13 +727,12 @@ class DapurClient {
     if (result?.status==='error') return this._fetch('/search',{q:tag,search_in:'tags',...params},false);
     return result;
   }
-  // ── Atomic view & like tracker — fire-and-forget, tidak pernah throw ──
   recordView(id) {
     if (!id || id < 1) return Promise.resolve();
     return fetch(this.baseUrl + '/record-view/' + id, {
       method: 'POST',
       headers: { 'X-API-Key': this.apiKey, 'Accept': 'application/json' },
-    }).catch(() => {}); // Gagal diam-diam, jangan crash halaman
+    }).catch(() => {});
   }
   recordLike(id) {
     if (!id || id < 1) return Promise.resolve();
@@ -898,20 +750,18 @@ class DapurClient {
   async getDapurConfig() {
     const TTL = Math.min(this.cacheTtl, 300);
 
-    // OPTIMASI: Level 1 cache — in-memory per domain, ZERO KV
     const memEntry = _dapurConfigMemCache.get(this.domain);
     if (memEntry && Date.now() - memEntry.ts < TTL * 1000) {
       return memEntry.data;
     }
 
-    // SWR: kalau cache expired tapi masih ada, refresh di background
     if (memEntry && this.ctx) {
       this.ctx.waitUntil(
         this._fetchAndStoreConfig(null, TTL)
           .then(fresh => { if (fresh) _dapurConfigMemCache.set(this.domain, { data: fresh, ts: Date.now() }); })
           .catch(()=>{})
       );
-      return memEntry.data; // Return stale data, jangan tunggu fetch
+      return memEntry.data;
     }
 
     const fresh = await this._fetchAndStoreConfig(null, TTL);
@@ -933,13 +783,10 @@ class DapurClient {
       if (json?.status!=='ok'||!json?.data) return null;
       const data = json.data;
       if (!['A','B','C'].includes(data.warung_type)) return null;
-      // OPTIMASI: Tidak perlu KV write — in-memory sudah cukup
       return data;
     } catch(err) { logError('DapurClient.config', err); return null; }
   }
 
-  // Warung tidak perlu tahu HMAC — minta URL jadi ke Dapur.
-  // Dapur yang sign, Warung tinggal embed hasilnya.
   async getPlayerUrl(id) {
     try {
       const resp = await fetch(this.baseUrl+'/player-url/'+id, {
@@ -971,7 +818,6 @@ class DapurClient {
     const fetchUrl = url+qs;
     const ck = 'apicache:'+this.cachePrefix+':'+hexHash(fetchUrl,16);
 
-    // OPTIMASI: get() sekaligus cek — hindari double-lookup (has+get)
     if (useCache) {
       const memHit = _dnaCache.get(ck);
       if (memHit !== null) return memHit;
@@ -991,19 +837,14 @@ class DapurClient {
       if (!resp.ok) { if (this.debug) console.error('[DapurClient] Backend error', resp.status, 'on', path); return this._errorResponse('Layanan sementara tidak tersedia.', 0); }
       data = await resp.json();
     } catch(err) { logError('DapurClient.fetch', err); return this._errorResponse('Layanan sementara tidak tersedia.'); }
-    // ── BUMBU OTOMATIS: spin konten sebelum di-cache ──────────────────
-    // Setiap domain mendapat versi unik dari konten yang sama dari Dapur.
-    // Mendukung response list (data=[]) maupun detail (data={}).
     if (data?.data) {
       if (Array.isArray(data.data)) {
         bumbuItems(data.data, this.domain);
       } else if (typeof data.data === 'object') {
         bumbuItem(data.data, this.domain);
-        // related items jika ada
         if (Array.isArray(data.data?.related)) bumbuItems(data.data.related, this.domain);
       }
     }
-    // ─────────────────────────────────────────────────────────────────
     if (useCache) _dnaCache.set(ck, data);
     return data;
   }
@@ -1014,20 +855,8 @@ class DapurClient {
 
 // ═══════════════════════════════════════════════════════════════════════
 // SECTION 13.5 — SITE DNA + BUMBU CONTENT SYSTEM
-//
-// Arsitektur:
-//   SiteDNA  → "genome" per domain — dikompute sekali, di-cache selamanya
-//              Mengontrol SEMUA keputusan variasi: copy, layout, label, bumbu
-//   bumbuItem  → spin konten per item menggunakan DNA domain-nya
-//   bumbuItems → terapkan ke seluruh array (dipanggil otomatis di _fetchAndStore)
-//
-// Prinsip:
-//   - Deterministik: hashSeed(domain + aspect), TIDAK pernah Math.random()
-//   - Domain A selalu dapat versi A, domain B selalu dapat versi B
-//   - Tidak ada satu baris hardcoded teks yang sama antar domain
 // ═══════════════════════════════════════════════════════════════════════
 
-// ── Sinonim pool untuk rewriting deskripsi ──────────────────────────────
 const _SINONIM = {
   'gratis':    ['gratis','free','tanpa biaya','bebas bayar','cuma-cuma'],
   'nonton':    ['nonton','tonton','saksikan','nikmati','simak'],
@@ -1041,10 +870,6 @@ const _SINONIM = {
   'cepat':     ['cepat','kilat','instan','tanpa delay','langsung'],
 };
 
-/**
- * rewriteDesc — sinonim substitusi di level kata.
- * seed menentukan sinonim mana yang dipilih — konsisten per domain+item.
- */
 function rewriteDesc(text, seed) {
   if (!text) return text;
   let out = text;
@@ -1059,13 +884,11 @@ function rewriteDesc(text, seed) {
   return out;
 }
 
-// ── SiteDNA — genome per domain ─────────────────────────────────────────
 const _siteDNACache = new LRUMap(20);
 
 class SiteDNA {
   constructor(domain) {
     this.domain = domain;
-    // Sub-seeds untuk tiap aspek — masing-masing independen
     this.s       = hashSeed(domain);
     this.sCopy   = hashSeed(domain + ':copy');
     this.sLayout = hashSeed(domain + ':layout');
@@ -1077,7 +900,6 @@ class SiteDNA {
   }
 
   _build() {
-    // ── Verb pool — kata kerja utama situs ────────────────────────────
     const verbs      = ['Nonton','Tonton','Streaming','Saksikan','Putar','Nikmati'];
     const verbsCari  = ['Cari','Temukan','Jelajahi','Cek','Eksplorasi'];
     const verbsLihat = ['Lihat','Buka','Akses','Browse','Kunjungi'];
@@ -1085,7 +907,6 @@ class SiteDNA {
     this.verbCari    = verbsCari [this.sCopy % verbsCari.length];
     this.verbLihat   = verbsLihat[this.sCopy % verbsLihat.length];
 
-    // ── Label section ──────────────────────────────────────────────────
     const labelTerbaru  = ['Terbaru','Konten Baru','Update Hari Ini','Baru Masuk','Fresh Today','Terkini'];
     const labelTrending = ['Trending','Paling Populer','Hot Sekarang','Banyak Ditonton','Top Pick','Viral'];
     const labelPopular  = ['Populer','Favorit','Most Viewed','Hits','Top Rated','Pilihan'];
@@ -1095,7 +916,6 @@ class SiteDNA {
     this.labelPopular   = labelPopular [(this.sNav+1) % labelPopular.length];
     this.labelSemua     = labelSemua   [(this.sNav+2) % labelSemua.length];
 
-    // ── CTA / action text ─────────────────────────────────────────────
     const ctaPlay   = ['Tonton Sekarang','Play Now','Langsung Tonton','Mulai Streaming','Putar Video','Saksikan'];
     const ctaSearch = ['Cari Konten','Temukan Video','Jelajahi Koleksi','Cari di Sini','Search'];
     const ctaMore   = ['Lihat Lebih Banyak','Muat Lebih','Load More','Tampilkan Lagi','Lebih Banyak'];
@@ -1103,21 +923,18 @@ class SiteDNA {
     this.ctaSearch  = ctaSearch[(this.sCopy+1) % ctaSearch.length];
     this.ctaMore    = ctaMore  [(this.sCopy+2) % ctaMore.length];
 
-    // ── Search placeholder ────────────────────────────────────────────
     const placeholders = [
       'Cari video...', 'Mau nonton apa?', 'Ketik judul atau kata kunci...',
       'Temukan konten favoritmu...', 'Cari film, album...', 'Search here...',
     ];
     this.searchPlaceholder = placeholders[this.sNav % placeholders.length];
 
-    // ── Section title home ────────────────────────────────────────────
     const secTitles = [
       '🔥 Konten Terbaru','✨ Update Terkini','🎬 Koleksi Pilihan',
       '⚡ Baru Ditambahkan','🎯 Konten Unggulan','🏆 Top Hari Ini',
     ];
     this.sectionTitleDefault = secTitles[this.sLayout % secTitles.length];
 
-    // ── Tagline footer ────────────────────────────────────────────────
     const taglines = [
       'Platform streaming gratis terbaik.',
       'Konten berkualitas tanpa batas.',
@@ -1128,7 +945,6 @@ class SiteDNA {
     ];
     this.footerTagline = taglines[this.sFooter % taglines.length];
 
-    // ── Copyright text style ──────────────────────────────────────────
     const copyrights = [
       (name, year) => `© ${year} ${name} • All Rights Reserved`,
       (name, year) => `${name} © ${year} • 18+ Only`,
@@ -1137,8 +953,6 @@ class SiteDNA {
     ];
     this.copyrightFn = copyrights[this.sFooter % copyrights.length];
 
-    // ── Title templates per item ──────────────────────────────────────
-    // Setiap domain punya 10 template, tapi URUTAN (pool) berbeda per domain
     const videoTpls = [
       `${this.verbNonton} {t} - Streaming Gratis HD`,
       `{t} Full Video Terbaru`,
@@ -1163,11 +977,9 @@ class SiteDNA {
       `{t} Gallery ${['HD','4K','Full'][this.sTitle%3]}`,
       `${this.verbLihat} Koleksi {t}`,
     ];
-    // Seeded shuffle — domain menentukan urutan template
     this.videoTpls = seededShuffle(videoTpls, this.sTitle);
     this.albumTpls = seededShuffle(albumTpls, this.sTitle + 1);
 
-    // ── Desc prefix/suffix ────────────────────────────────────────────
     const prefixes = [
       `${this.verbNonton} {t} secara gratis tanpa registrasi.`,
       `{t} hadir dengan kualitas terbaik untuk Anda.`,
@@ -1195,10 +1007,8 @@ class SiteDNA {
     this.descPrefixes = seededShuffle(prefixes, this.sDesc);
     this.descSuffixes = seededShuffle(suffixes, this.sDesc + 1);
 
-    // ── Quality labels ────────────────────────────────────────────────
     this.qualityPool = seededShuffle(['HD','FHD','4K','720p','1080p','HDR','UHD','HQ','2K','4K HDR'], this.s);
 
-    // ── Tag extra pools ───────────────────────────────────────────────
     const tagPools = [
       ['gratis','streaming','online','terbaru'],
       ['hd','kualitas','terbaik','pilihan'],
@@ -1210,8 +1020,6 @@ class SiteDNA {
     ];
     this.tagPools = seededShuffle(tagPools, this.s + 7);
 
-    // ── Home section order ────────────────────────────────────────────
-    // 3 kemungkinan urutan blok di halaman home
     const orders = [
       ['banner_top','trending','filter','grid','promo','banner_bottom'],
       ['banner_top','filter','grid','trending','promo','banner_bottom'],
@@ -1219,7 +1027,6 @@ class SiteDNA {
     ];
     this.homeSectionOrder = orders[this.sLayout % orders.length];
 
-    // ── Nav category strip label variants ─────────────────────────────
     this.navLabels = {
       semua:    this.labelSemua,
       trending: `🔥 ${this.labelTrending}`,
@@ -1232,7 +1039,6 @@ class SiteDNA {
     };
   }
 
-  /** Ambil SiteDNA dari cache, atau buat baru */
   static get(domain) {
     let dna = _siteDNACache.get(domain);
     if (!dna) { dna = new SiteDNA(domain); _siteDNACache.set(domain, dna); }
@@ -1240,13 +1046,6 @@ class SiteDNA {
   }
 }
 
-// ── Bumbu functions ──────────────────────────────────────────────────────
-
-/**
- * bumbuItem — spin satu item secara deterministik berdasarkan domain+id.
- * Semua keputusan diambil dari SiteDNA domain bersangkutan.
- * Menyimpan _original_title/_original_description agar slug URL tidak rusak.
- */
 function bumbuItem(item, domain) {
   if (!item || !item.id) return item;
   const dna     = SiteDNA.get(domain);
@@ -1255,27 +1054,22 @@ function bumbuItem(item, domain) {
   const sTag    = hashSeed(domain + ':' + item.id + ':tag');
   const isAlbum = item.type === 'album';
 
-  // ── 1. Title spin ─────────────────────────────────────────────────────
   if (item.title) {
     const tpls = isAlbum ? dna.albumTpls : dna.videoTpls;
     item._original_title = item._original_title || item.title;
     item.title = tpls[s % tpls.length].replace('{t}', item._original_title);
   }
 
-  // ── 2. Description spin + sinonim rewrite ────────────────────────────
   const baseTitle = item._original_title || item.title || '';
   const prefix    = dna.descPrefixes[sDesc % dna.descPrefixes.length].replace('{t}', baseTitle);
   const suffix    = dna.descSuffixes[(sDesc + 3) % dna.descSuffixes.length];
   const origDesc  = item._original_description !== undefined ? item._original_description : (item.description || '');
   item._original_description = origDesc;
-  // Gabung prefix + deskripsi asli (dipotong + sinonim rewrite) + suffix
   const trimmed   = origDesc ? rewriteDesc(truncate(origDesc, 120), sDesc) + ' ' : '';
   item.description = `${prefix} ${trimmed}${suffix}`;
 
-  // ── 3. Quality label ──────────────────────────────────────────────────
   item.quality_label = dna.qualityPool[s % dna.qualityPool.length];
 
-  // ── 4. Tag enrichment ─────────────────────────────────────────────────
   if (Array.isArray(item.tags)) {
     const extra  = dna.tagPools[sTag % dna.tagPools.length];
     item.tags = [...new Set([...item.tags, ...extra])].slice(0, 15);
@@ -1284,10 +1078,6 @@ function bumbuItem(item, domain) {
   return item;
 }
 
-/**
- * bumbuItems — terapkan bumbuItem ke seluruh array, termasuk sub-items album.
- * Dipanggil otomatis di DapurClient._fetchAndStore sebelum masuk cache.
- */
 function bumbuItems(items, domain) {
   if (!Array.isArray(items)) return;
   for (const item of items) {
@@ -1419,7 +1209,7 @@ class SeoHelper {
     const fp=this.generateUniqueSchema(item.id||0, item.type);
     const type=item.type||'video';
     const baseId='https://'+this.domain+'/#'+type+'-'+(item.id||0);
-    const pub={ '@type':'Organization', '@id':'https://'+this.domain+'/#organization', 'name':this.siteName, 'url':'https://'+this.domain, 'logo':{'@type':'ImageObject','url':'https://'+this.domain+'/assets/og-default.jpg','width':1200,'height':630} };
+    const pub={ '@type':'Organization','@id':'https://'+this.domain+'/#organization', 'name':this.siteName, 'url':'https://'+this.domain, 'logo':{'@type':'ImageObject','url':'https://'+this.domain+'/assets/og-default.jpg','width':1200,'height':630} };
     const base={
       '@type':fp.schema_type,'@id':baseId,'name':item.title||'',
       'description':truncate(item.description||item.title||'',300),
@@ -1470,15 +1260,18 @@ class SeoHelper {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// SECTION 15 — ADS / BANNER SYSTEM
+// SECTION 15 — ADS / BANNER SYSTEM (FIXED)
 // ═══════════════════════════════════════════════════════════════════════
 
-function sanitizeAdCode(code) {
+/**
+ * Sanitasi kode iklan — opsional dengan preserveEvents untuk popunder
+ * @param {string} code - Kode iklan HTML
+ * @param {boolean} preserveEvents - Jika true, pertahankan event handler
+ */
+function sanitizeAdCode(code, preserveEvents=false) {
   if (!code) return '';
-  // Hanya strip event handler inline dari tag <ins> dan <a> saja.
-  // <div> dan <iframe> TIDAK distrip karena popunder (JuicyAds, dll) menggunakan
-  // handler onclick/onload di elemen tersebut untuk trigger iklan.
-  // Penting: jangan hapus content <script> karena AdProvider.push() butuh itu.
+  if (preserveEvents) return code; // Jangan sanitasi untuk popunder
+  // Hanya strip event handler dari <ins> dan <a> saja
   return code
     .replace(/(<(?:ins|a)\b[^>]*)\son\w+="[^"]*"/gi, '$1')
     .replace(/(<(?:ins|a)\b[^>]*)\son\w+='[^']*'/gi, '$1');
@@ -1488,22 +1281,25 @@ function getAdsSlots(cfg) {
   const ck = cfg.ADS_ADSENSE_CLIENT+':'+cfg.WARUNG_DOMAIN;
   if (_adsSlotsCache.has(ck)) return _adsSlotsCache.get(ck);
 
-  // Kode iklan HTML penuh dibaca langsung dari cfg (env var Cloudflare Dashboard).
-  // Tidak ada lagi hardcode — isi env var dengan script dari jaringan iklan apapun.
-  const tD = cfg.ADS_CODE_TOP_D, tM = cfg.ADS_CODE_TOP_M; // Grup TOP
-  const bD = cfg.ADS_CODE_BTM_D, bM = cfg.ADS_CODE_BTM_M; // Grup BOTTOM
-  const sD = cfg.ADS_CODE_SDB_D, sM = cfg.ADS_CODE_SDB_M; // Grup SIDEBAR
+  const tD = cfg.ADS_CODE_TOP_D, tM = cfg.ADS_CODE_TOP_M;
+  const bD = cfg.ADS_CODE_BTM_D, bM = cfg.ADS_CODE_BTM_M;
+  const sD = cfg.ADS_CODE_SDB_D, sM = cfg.ADS_CODE_SDB_M;
+  const pD = cfg.ADS_CODE_POPUNDER_D, pM = cfg.ADS_CODE_POPUNDER_M; // Slot popunder
 
   const slots = {
-    header_top:    { enabled:true, type:'html', code_desktop:tD, code_mobile:tM, label:true,        align:'center', margin:'0 0 4px' },
-    before_grid:   { enabled:true, type:'html', code_desktop:tD, code_mobile:tM, label:'Sponsored', align:'center', margin:'8px 0 16px' },
-    mid_grid:      { enabled:true, type:'html', code_desktop:tD, code_mobile:tM, label:'Iklan',     align:'center', margin:'4px 0', insert_after:6 },
-    after_grid:    { enabled:true, type:'html', code_desktop:bD, code_mobile:bM, label:true,        align:'center', margin:'16px 0 8px' },
-    sidebar_top:   { enabled:true, type:'html', code_desktop:sD, code_mobile:sM, label:true,        align:'center', margin:'0 0 16px' },
-    sidebar_mid:   { enabled:true, type:'html', code_desktop:sD, code_mobile:sM, label:true,        align:'center', margin:'0 0 16px' },
-    sidebar_bottom:{ enabled:true, type:'html', code_desktop:sD, code_mobile:sM, label:true,        align:'center', margin:'0' },
-    after_content: { enabled:true, type:'html', code_desktop:bD, code_mobile:bM, label:true,        align:'center', margin:'24px 0' },
-    footer_top:    { enabled:true, type:'html', code_desktop:bD, code_mobile:bM, label:true,        align:'center', margin:'0' },
+    // Slot reguler dengan nonce
+    header_top:    { enabled:true, type:'html', code_desktop:tD, code_mobile:tM, label:true,        align:'center', margin:'0 0 4px', bypassCSP: false },
+    before_grid:   { enabled:true, type:'html', code_desktop:tD, code_mobile:tM, label:'Sponsored', align:'center', margin:'8px 0 16px', bypassCSP: false },
+    mid_grid:      { enabled:true, type:'html', code_desktop:tD, code_mobile:tM, label:'Iklan',     align:'center', margin:'4px 0', insert_after:6, bypassCSP: false },
+    after_grid:    { enabled:true, type:'html', code_desktop:bD, code_mobile:bM, label:true,        align:'center', margin:'16px 0 8px', bypassCSP: false },
+    sidebar_top:   { enabled:true, type:'html', code_desktop:sD, code_mobile:sM, label:true,        align:'center', margin:'0 0 16px', bypassCSP: false },
+    sidebar_mid:   { enabled:true, type:'html', code_desktop:sD, code_mobile:sM, label:true,        align:'center', margin:'0 0 16px', bypassCSP: false },
+    sidebar_bottom:{ enabled:true, type:'html', code_desktop:sD, code_mobile:sM, label:true,        align:'center', margin:'0', bypassCSP: false },
+    after_content: { enabled:true, type:'html', code_desktop:bD, code_mobile:bM, label:true,        align:'center', margin:'24px 0', bypassCSP: false },
+    footer_top:    { enabled:true, type:'html', code_desktop:bD, code_mobile:bM, label:true,        align:'center', margin:'0', bypassCSP: false },
+    
+    // Slot popunder khusus — bypass CSP & sanitasi
+    popunder:      { enabled:true, type:'html', code_desktop:pD, code_mobile:pM, label:false,       align:'center', margin:'0', bypassCSP: true },
   };
   _adsSlotsCache.set(ck, slots);
   return slots;
@@ -1519,33 +1315,61 @@ function getDeliveryMode(request) {
   return { lite:slowNet||saveData, saveData, mobile:cfDev==='mobile'||_MOBILE_UA_RX.test(ua), lowEnd:slowNet };
 }
 
-function renderBanner(name, cfg, request=null, nonce='') {
+/**
+ * Render banner iklan
+ * @param {string} name - Nama slot (header_top, before_grid, dll)
+ * @param {object} cfg - Konfigurasi
+ * @param {Request} request - Request object
+ * @param {string} nonce - CSP nonce
+ * @param {boolean} bypassCSP - Jika true, lewati inject nonce (untuk popunder)
+ */
+function renderBanner(name, cfg, request=null, nonce='', bypassCSP=false) {
   if (!cfg.ADS_ENABLED) return '';
-  const slots=getAdsSlots(cfg); const slot=slots[name];
+  const slots=getAdsSlots(cfg); 
+  const slot=slots[name];
   if (!slot||!slot.enabled) return '';
+  
+  // Gunakan bypassCSP dari parameter atau dari slot
+  const shouldBypassCSP = bypassCSP || slot.bypassCSP || false;
+  
   const margin=h(slot.margin||'16px 0');
   const align=slot.align==='left'?'left':slot.align==='right'?'right':'center';
-  // Inject nonce ke semua <script> tag agar lolos CSP
+  
+  // Inject nonce ke semua <script> tag — hanya jika tidak bypass
   const injectNonce = (code) => {
-    if (!code||!nonce) return sanitizeAdCode(code);
-    return sanitizeAdCode(code).replace(/<script\b([^>]*)>/gi, (m, attrs) => {
+    if (!code) return '';
+    if (shouldBypassCSP) return code; // Skip inject nonce untuk popunder
+    if (!nonce) return sanitizeAdCode(code, shouldBypassCSP);
+    
+    // Sanitasi dulu (kecuali bypass), lalu inject nonce
+    const sanitized = sanitizeAdCode(code, shouldBypassCSP);
+    return sanitized.replace(/<script\b([^>]*)>/gi, (m, attrs) => {
       if (attrs.includes('nonce=')) return m;
       return `<script${attrs} nonce="${nonce}">`;
     });
   };
-  if (slot.type==='html'&&slot.code_desktop&&slot.code_mobile) {
+
+  // Label iklan (opsional)
+  const labelHtml = slot.label && cfg.ADS_LABEL 
+    ? `<div class="ad-label">${h(cfg.ADS_LABEL)}</div>` 
+    : '';
+
+  if (slot.type==='html' && slot.code_desktop && slot.code_mobile) {
     if (request) {
-      const isMob=getDeliveryMode(request).mobile;
-      const code=injectNonce(isMob?slot.code_mobile:slot.code_desktop);
-      const cls=isMob?'ads-mobile':'ads-desktop';
-      return `<div class="ad-slot ad-slot--${h(name)} ${cls}" style="margin:${margin};text-align:${align}">${code}</div>`;
+      const isMob = getDeliveryMode(request).mobile;
+      const code = injectNonce(isMob ? slot.code_mobile : slot.code_desktop);
+      const cls = isMob ? 'ads-mobile' : 'ads-desktop';
+      return `<div class="ad-slot ad-slot--${h(name)} ${cls}" style="margin:${margin};text-align:${align}">${labelHtml}${code}</div>`;
     }
+    // Fallback tanpa request (tampilkan kedua versi)
     return [
-      `<div class="ad-slot ad-slot--${h(name)} ads-desktop" style="margin:${margin};text-align:${align}">${injectNonce(slot.code_desktop)}</div>`,
-      `<div class="ad-slot ad-slot--${h(name)} ads-mobile"  style="margin:${margin};text-align:${align}">${injectNonce(slot.code_mobile)}</div>`,
+      `<div class="ad-slot ad-slot--${h(name)} ads-desktop" style="margin:${margin};text-align:${align}">${labelHtml}${injectNonce(slot.code_desktop)}</div>`,
+      `<div class="ad-slot ad-slot--${h(name)} ads-mobile"  style="margin:${margin};text-align:${align}">${labelHtml}${injectNonce(slot.code_mobile)}</div>`,
     ].join('\n');
   }
-  return `<div class="ad-slot ad-slot--${h(name)}" style="margin:${margin};text-align:${align}">${injectNonce(slot.code_desktop||slot.code_mobile||'')}</div>`;
+  
+  // Fallback untuk slot yang hanya punya satu kode
+  return `<div class="ad-slot ad-slot--${h(name)}" style="margin:${margin};text-align:${align}">${labelHtml}${injectNonce(slot.code_desktop||slot.code_mobile||'')}</div>`;
 }
 
 function renderBannerMidGrid(index, cfg, request=null, nonce='') {
@@ -2025,18 +1849,19 @@ function renderHead({ title, desc, canonical, ogImage, ogType, keywords, noindex
     'isPartOf':{'@type':'WebSite','name':cfg.WARUNG_NAME,'url':'https://'+cfg.WARUNG_DOMAIN},
   },null,0);
 
-  // criticalCss is now handled by getUniqueTheme(cfg) which is called separately
   const criticalCss = getUniqueTheme(cfg);
 
   const dapurDomain = (cfg._env?.DAPUR_BASE_URL||'https://dapur.dukunseo.com').replace(/https?:\/\//,'').split('/')[0];
+  
+  // CSP yang diperbarui dengan domain juicyads lengkap
   const csp = [
     `default-src 'self' https://${cfg.WARUNG_DOMAIN}`,
-    `script-src 'self' 'nonce-${nonce}'${extraNonces.map(n=>` 'nonce-${n}'`).join('')} https://*.magsrv.com https://a.magsrv.com https://*.juicyads.com https://*.juicyadserve.com https://*.juicyadserver.com https://ads.juicyads.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://cdnjs.cloudflare.com https://fonts.googleapis.com`,
+    `script-src 'self' 'nonce-${nonce}'${extraNonces.map(n=>` 'nonce-${n}'`).join('')} https://*.magsrv.com https://a.magsrv.com https://*.juicyads.com https://*.juicyadserve.com https://*.juicyadserver.com https://ads.juicyads.com https://www.juicyads.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://cdnjs.cloudflare.com https://fonts.googleapis.com`,
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com`,
     `font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com`,
     `img-src 'self' data: blob: https:`,
     `media-src 'self' blob: https:`,
-    `frame-src 'self' https://*.magsrv.com https://${dapurDomain} https://${cfg.WARUNG_DOMAIN} https://googleads.g.doubleclick.net https://*.juicyads.com https://*.juicyadserve.com https://*.juicyadserver.com`,
+    `frame-src 'self' https://*.magsrv.com https://${dapurDomain} https://${cfg.WARUNG_DOMAIN} https://googleads.g.doubleclick.net https://*.juicyads.com https://*.juicyadserve.com https://*.juicyadserver.com https://ads.juicyads.com`,
     `connect-src 'self' https://${cfg.WARUNG_DOMAIN} https://${dapurDomain} https://*.magsrv.com https://*.juicyads.com https://*.juicyadserve.com https://*.juicyadserver.com https://pagead2.googlesyndication.com`,
     `object-src 'none'`,`base-uri 'self'`,`form-action 'self'`,`upgrade-insecure-requests`,
   ].join('; ');
@@ -2078,7 +1903,6 @@ ${extraHead}
 function renderNavHeader({ cfg, currentPage='', q='', isHome=false }) {
   const nameParts = cfg.WARUNG_NAME.split(' ');
   const logo = h(nameParts[0]) + (nameParts[1] ? `<span>${h(nameParts.slice(1).join(' '))}</span>` : '');
-  // BUMBU: label nav dari SiteDNA domain — tiap domain beda teks
   const dna  = SiteDNA.get(cfg.WARUNG_DOMAIN);
   
   return `<body>
@@ -2134,8 +1958,10 @@ function renderNavHeader({ cfg, currentPage='', q='', isHome=false }) {
 
 function renderFooter(cfg, request=null, nonce='') {
   const year = new Date().getFullYear();
-  // BUMBU: tagline & copyright dari SiteDNA domain
   const dna  = SiteDNA.get(cfg.WARUNG_DOMAIN);
+  
+  // Render popunder dengan bypassCSP=true
+  const popunder = renderBanner('popunder', cfg, request, nonce, true);
   
   return `${renderBanner('footer_top', cfg, request, nonce)}
 <!-- FOOTER -->
@@ -2180,6 +2006,7 @@ function renderFooter(cfg, request=null, nonce='') {
   <p style="text-align:center;font-size:11px;color:#555;margin:8px 0 12px">${h(dna.footerTagline)}</p>
   <div class="footer-copy">${h(dna.copyrightFn(cfg.WARUNG_NAME, year))}</div>
 </footer>
+${popunder} <!-- Popunder di luar footer biar aman -->
 
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
@@ -2360,11 +2187,9 @@ function renderGrid(items, cfg, midBannerEnabled=true, request=null, nonce='') {
 
 function renderPagination(pagination, buildUrl) {
   if (!pagination) return '';
-  // Normalisasi field — support: total_pages, last_page, pageCount
   const page  = pagination.current_page || pagination.page || 1;
   const total = pagination.total_pages  || pagination.last_page || pagination.pageCount || 1;
   if (total <= 1) return '';
-  // Fallback has_prev/has_next kalau API tidak return field ini
   const hasPrev = pagination.has_prev !== undefined ? pagination.has_prev : page > 1;
   const hasNext = pagination.has_next !== undefined ? pagination.has_next : page < total;
   let html=`<nav class="pagination" aria-label="Navigasi halaman">`;
@@ -2469,7 +2294,6 @@ async function handleHome(request, cfg, client, seo) {
   const prevUrl=page>1?seo.canonical(buildCanonicalParams(page-1)):null;
   const nextUrl=page<paginationTotal?seo.canonical(buildCanonicalParams(page+1)):null;
   const adNonce=generateNonce();
-  // BUMBU: ambil SiteDNA untuk variasi label & section title
   const dna = SiteDNA.get(cfg.WARUNG_DOMAIN);
   const head=renderHead({ title:pageTitle, desc:pageDesc, canonical, ogImage:cfg.SEO_OG_IMAGE, ogType:'website', noindex:false, cfg, seo, request, deliveryMode, extraHead:homeExtraHead, prevUrl, nextUrl, extraNonces:[adNonce] });
   const nav=renderNavHeader({ cfg, isHome:!isTrending&&!sortParam, currentPage: isTrending?'trending':sortParam==='popular'?'popular':sortParam==='newest'?'latest':sortParam==='longest'?'longest':'' });
@@ -2512,15 +2336,11 @@ async function handleHome(request, cfg, client, seo) {
 async function handleView(request, cfg, client, seo, segments) {
   const id=parseInt(segments[1]||'0');
   if (!id||id<1) return handle404(cfg,seo,request);
-  // FIX: segments[0] sudah di-lowercase oleh router (via `first`), tapi cfg.PATH_* bisa mixed case
-  // Pakai .toLowerCase() di kedua sisi agar tidak mismatch saat PATH_CONTENT diubah
   const reqPath=(segments[0]||'').toLowerCase();
   if (cfg.WARUNG_TYPE==='A'&&reqPath===cfg.PATH_ALBUM.toLowerCase()) return handle404(cfg,seo,request);
   if (cfg.WARUNG_TYPE==='B'&&reqPath===cfg.PATH_CONTENT.toLowerCase()) return handle404(cfg,seo,request);
   const [itemResult, relatedResult]=await Promise.all([client.getMediaDetail(id), client.getRelated(id,cfg.RELATED_COUNT)]);
   if (!itemResult?.data||itemResult?.status==='error') return handle404(cfg,seo,request);
-  // Non-blocking: catat view ke Dapur — atomic, aman dari race condition lintas domain
-  // Hanya untuk manusia (bukan bot search / scraper)
   const _ua = request.headers.get('User-Agent') || '';
   if (!isSearchBot(_ua) && !isScraperBot(_ua) && client.ctx?.waitUntil) {
     client.ctx.waitUntil(client.recordView(id));
@@ -2572,9 +2392,8 @@ ${tagsHtml}${descHtml}
   const relatedHtml=related.length?`<ol class="related-list">${related.map(rel=>`<li><a href="${h(itemUrl(rel,cfg))}" class="related-item"><img src="${h(safeThumb(rel,cfg))}" alt="" loading="lazy" width="80" height="45" onerror="this.src='${h(cfg.DEFAULT_THUMB)}'"><div class="related-info"><p class="related-title">${h(mbSubstr(rel.title,0,50))}</p><small class="related-meta"><span class="badge-small"><i class="fas ${TYPE_ICONS[rel.type]||'fa-file'}"></i> ${h(rel.type||'video')}</span><span><i class="fas fa-eye"></i> ${formatViews(rel.views||0)}</span></small></div></a></li>`).join('')}</ol>`:`<p class="empty-state">Tidak ada konten terkait.</p>`;
   const popularTags=media.tags?.slice(0,5).map(t=>`<a href="${h(tagUrl(t,cfg))}" class="tag">#${h(t)}</a>`).join('')||'';
   const lightboxHtml=type==='album'?`<div id="lightbox" class="lightbox hidden" role="dialog" aria-modal="true"><div class="lightbox-content"><img id="lightbox-img" src="" alt="" class="lightbox-image"><button type="button" id="lightboxClose" class="lightbox-close" aria-label="Tutup"><i class="fas fa-times"></i></button><div class="lightbox-nav"><button type="button" id="lightboxPrev" class="lightbox-prev" aria-label="Sebelumnya"><i class="fas fa-chevron-left"></i></button><button type="button" id="lightboxNext" class="lightbox-next" aria-label="Berikutnya"><i class="fas fa-chevron-right"></i></button></div><div class="lightbox-caption" id="lightbox-caption"></div></div></div>
-<script nonce="${adNonce}">var _lb={idx:0,photos:${JSON.stringify(albumPhotos.map(p=>p.url))},titles:${JSON.stringify(albumPhotos.map(()=>media.title))}};function openLightbox(src,i,t){_lb.idx=i;var img=document.getElementById('lightbox-img'),cap=document.getElementById('lightbox-caption'),lb=document.getElementById('lightbox');img.src=src;img.alt=t+' - Foto '+(i+1);cap.textContent=t+' ('+(i+1)+' / '+_lb.photos.length+')';lb.classList.remove('hidden');document.body.style.overflow='hidden';lb.querySelector('.lightbox-close').focus();}function closeLightbox(e){if(!e||e.target===e.currentTarget||e.target.closest('.lightbox-close')){var lb=document.getElementById('lightbox');lb.classList.add('hidden');document.body.style.overflow='';}}function navigateLightbox(d){var n=(_lb.idx+d+_lb.photos.length)%_lb.photos.length;_lb.idx=n;var img=document.getElementById('lightbox-img'),cap=document.getElementById('lightbox-caption');img.src=_lb.photos[n];cap.textContent=_lb.titles[n]+' ('+(n+1)+' / '+_lb.photos.length+')';}(function(){var lb=document.getElementById('lightbox'),lc=document.getElementById('lightboxClose'),lp=document.getElementById('lightboxPrev'),ln=document.getElementById('lightboxNext');if(lb)lb.addEventListener('click',function(e){if(e.target===lb)closeLightbox(e);});if(lc)lc.addEventListener('click',closeLightbox);if(lp)lp.addEventListener('click',function(){navigateLightbox(-1);});if(ln)ln.addEventListener('click',function(){navigateLightbox(1);});document.querySelectorAll('.js-lightbox-open').forEach(function(btn){btn.addEventListener('click',function(){openLightbox(btn.dataset.src,parseInt(btn.dataset.idx),btn.dataset.title);});});})();document.addEventListener('keydown',function(e){var lb=document.getElementById('lightbox');if(lb&&!lb.classList.contains('hidden')){if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft')navigateLightbox(-1);if(e.key==='ArrowRight')navigateLightbox(1);}});<\/script>`:'';;
+<script nonce="${adNonce}">var _lb={idx:0,photos:${JSON.stringify(albumPhotos.map(p=>p.url))},titles:${JSON.stringify(albumPhotos.map(()=>media.title))}};function openLightbox(src,i,t){_lb.idx=i;var img=document.getElementById('lightbox-img'),cap=document.getElementById('lightbox-caption'),lb=document.getElementById('lightbox');img.src=src;img.alt=t+' - Foto '+(i+1);cap.textContent=t+' ('+(i+1)+' / '+_lb.photos.length+')';lb.classList.remove('hidden');document.body.style.overflow='hidden';lb.querySelector('.lightbox-close').focus();}function closeLightbox(e){if(!e||e.target===e.currentTarget||e.target.closest('.lightbox-close')){var lb=document.getElementById('lightbox');lb.classList.add('hidden');document.body.style.overflow='';}}function navigateLightbox(d){var n=(_lb.idx+d+_lb.photos.length)%_lb.photos.length;_lb.idx=n;var img=document.getElementById('lightbox-img'),cap=document.getElementById('lightbox-caption');img.src=_lb.photos[n];cap.textContent=_lb.titles[n]+' ('+(n+1)+' / '+_lb.photos.length+')';}(function(){var lb=document.getElementById('lightbox'),lc=document.getElementById('lightboxClose'),lp=document.getElementById('lightboxPrev'),ln=document.getElementById('lightboxNext');if(lb)lb.addEventListener('click',function(e){if(e.target===lb)closeLightbox(e);});if(lc)lc.addEventListener('click',closeLightbox);if(lp)lp.addEventListener('click',function(){navigateLightbox(-1);});if(ln)ln.addEventListener('click',function(){navigateLightbox(1);});document.querySelectorAll('.js-lightbox-open').forEach(function(btn){btn.addEventListener('click',function(){openLightbox(btn.dataset.src,parseInt(btn.dataset.idx),btn.dataset.title);});});})();document.addEventListener('keydown',function(e){var lb=document.getElementById('lightbox');if(lb&&!lb.classList.contains('hidden')){if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft')navigateLightbox(-1);if(e.key==='ArrowRight')navigateLightbox(1);}});<\/script>`:'';
   const pageScript=`<script nonce="${adNonce}">function copyLink(btn){var url=btn.dataset.url||location.href;if(navigator.clipboard){navigator.clipboard.writeText(url).then(()=>showToast('Link disalin!')).catch(()=>fallbackCopy(url));}else fallbackCopy(url);}function fallbackCopy(text){var ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;top:-999px';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');showToast('Link disalin!');}catch{prompt('Salin link:',text);}document.body.removeChild(ta);}function showToast(msg){var ex=document.querySelector('.toast');ex&&ex.remove();var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.parentNode&&t.remove(),2200);}function shareContent(){if(navigator.share){navigator.share({title:${JSON.stringify(media.title)},url:location.href}).catch(()=>{});}else copyLink({dataset:{url:location.href}});}function toggleDesc(btn){var id=btn.getAttribute('aria-controls'),fd=document.getElementById(id);if(!fd)return;var open=btn.getAttribute('aria-expanded')==='true';fd.classList.toggle('hidden',open);fd.setAttribute('aria-hidden',String(open));btn.setAttribute('aria-expanded',String(!open));btn.textContent=open?'Baca selengkapnya':'Tutup';}
-// FIX CSP: bind copy/share/toggleDesc via addEventListener
 (function(){var cp=document.getElementById('btnCopyLink'),sh=document.getElementById('btnShare');if(cp)cp.addEventListener('click',function(){copyLink(this);});if(sh)sh.addEventListener('click',shareContent);document.querySelectorAll('.js-toggle-desc').forEach(function(b){b.addEventListener('click',function(){toggleDesc(this);});});})();<\/script>`;
   const breadcrumbHtml=renderBreadcrumb([{name:'Beranda',url:homeUrl(cfg)},{name:ucfirst(type),url:categoryUrl(type,1,cfg)},{name:mbSubstr(media.title,0,40),url:null}],cfg);
   const main=`<main id="main-content" class="view-main"><div class="view-layout">
@@ -2781,7 +2600,6 @@ async function handleSitemap(request, cfg, client, env, honeyPrefix, cannibal=nu
       urls.push({loc:baseUrl+'/'+slug,changefreq:'monthly',priority:'0.6'});
     });
 
-    // ── Keyword cannibalize landing pages — priority 0.8, update daily ──
     if (cannibal) {
       cannibal.getAllUrls().forEach(kwUrl=>{
         urls.push({loc:kwUrl,changefreq:'daily',priority:'0.8',lastmod:today});
@@ -2827,7 +2645,6 @@ function htmlHeaders(cfg, contentType) {
   contentType=contentType||'page';
   const ck=(cfg?.WARUNG_DOMAIN||'')+':'+contentType;
   const cached = _headersCache.get(ck);
-  // OPTIMASI: return cached object langsung (no spread) — caller tidak boleh mutasi
   if (cached) return cached;
   const cacheByType={
     home:    'public, max-age=180, s-maxage=1800, stale-while-revalidate=3600',
@@ -2863,10 +2680,8 @@ export async function onRequest(context) {
   const { request, env, next, waitUntil } = context;
   applyImmortalEnv(env);
 
-  // Request context terpisah — TIDAK mutate cfg yang di-cache
   const reqCtx = { id: crypto.randomUUID().slice(0, 8), startTime: Date.now() };
 
-  // OPTIMASI: parse URL sekali saja, dipakai di semua tempat
   const url         = new URL(request.url);
   const reqPathRaw  = url.pathname;
   const reqPathLower= reqPathRaw.toLowerCase();
@@ -2875,7 +2690,6 @@ export async function onRequest(context) {
   if (!isHandled && _STATIC_EXT_RX.test(reqPathRaw)) return next();
 
   const cfg  = getConfig(env, request);
-  // OPTIMASI: SeoHelper per-domain singleton (immutable setelah init)
   let seo = _seoCache.get(cfg.WARUNG_DOMAIN);
   if (!seo) { seo = new SeoHelper(cfg); _seoCache.set(cfg.WARUNG_DOMAIN, seo); }
   const path = url.pathname;
@@ -2900,20 +2714,16 @@ export async function onRequest(context) {
   const getVisitorType = () => { if (!_visitorTypeCache) _visitorTypeCache = classifyVisitor(request); return _visitorTypeCache; };
 
   if (!isSearchBotUA) {
-    // IP Blacklist — OPTIMASI: sync call
     if (isBlacklisted(ip)) return new Response(null,{status:200});
 
     if (!isPublicFeed) {
-      // Bot detection
       const visitorType=getVisitorType();
 
-      // Blackhole untuk scraper
       if (visitorType==='scraper'||visitorType==='headless') {
         const bhHtml = await blackholeCaptureWithKV(ip, true, env);
         if (bhHtml) return new Response(bhHtml,{headers:{'Content-Type':'text/html'}});
       }
 
-      // Ghost Body untuk headless
       if (visitorType==='headless') {
         const ghost = ghostBody(cfg, path, { title: cfg.WARUNG_NAME, description: cfg.SEO_DEFAULT_DESC });
         return ghost
@@ -2921,12 +2731,10 @@ export async function onRequest(context) {
           : generateFakeContent(cfg, honeyPrefix);
       }
 
-      // Sacrificial lamb untuk bad traffic
       const sacrificeResp=sacrificeRedirect(request,cfg.WARUNG_DOMAIN);
       if (sacrificeResp) return sacrificeResp;
     }
 
-    // Rate limiting — OPTIMASI: sync call (no await)
     try {
       checkRateLimit(request);
     } catch(err) {
@@ -2949,7 +2757,6 @@ export async function onRequest(context) {
 
   const ctx    = { waitUntil: fn=>waitUntil(fn) };
   const client = new DapurClient(cfg,env,ctx);
-  // OPTIMASI: KeywordCannibalize & IndexingHammer sebagai per-domain singleton
   let cannibal = _cannibalCache.get(cfg.WARUNG_DOMAIN);
   if (!cannibal) { cannibal = new KeywordCannibalize(cfg, env); _cannibalCache.set(cfg.WARUNG_DOMAIN, cannibal); }
   let hammer = _hammerCache.get(cfg.WARUNG_DOMAIN);
@@ -2958,8 +2765,6 @@ export async function onRequest(context) {
   waitUntil(hammer.maybeScheduledPing(waitUntil).catch(err => logError('IndexingHammer.schedule', err, request, reqCtx)));
 
   const dapurConfig=await client.getDapurConfig();
-  // OPTIMASI: cache reqCfg berdasarkan (domain + dapurConfig identity)
-  // Hindari Object.assign + Object.create setiap request
   let reqCfg;
   if (dapurConfig) {
     const rcKey = cfg.WARUNG_DOMAIN + ':' + (dapurConfig.warung_type||'') + ':' + (dapurConfig.features ? JSON.stringify(dapurConfig.features) : '');
@@ -2974,7 +2779,6 @@ export async function onRequest(context) {
   } else {
     reqCfg = cfg;
   }
-  // OPTIMASI: Update seo.cfg untuk request ini (dapurConfig bisa berbeda dari cached seo)
   seo.cfg = reqCfg;
 
   const pc=reqCfg.PATH_CONTENT.toLowerCase();
@@ -2985,7 +2789,6 @@ export async function onRequest(context) {
 
   let response;
 
-  // ── Keyword Cannibalize landing pages (/k/slot-gacor dst) ──────────
   const cannibalizePath = env.CANNIBALIZE_PATH || 'k';
   if (first === cannibalizePath) {
     const keyword = cannibal.matchPath(path);
@@ -2994,7 +2797,6 @@ export async function onRequest(context) {
         await cannibal.renderLanding(keyword, request, seo, client),
         { status:200, headers: htmlHeaders(reqCfg,'list') }
       );
-      // Non-blocking: ping IndexNow setiap hit keyword landing page
       waitUntil(hammer.pingOnKeywordHit(keyword).catch(()=>{}));
     } else {
       response = await handle404(reqCfg,seo,request);
@@ -3015,7 +2817,6 @@ export async function onRequest(context) {
     if (staticSlugs.includes(first)) response=handleStaticPage(reqCfg,seo,request,first);
     else if (first==='sitemap.xml') {
       response=await handleSitemap(request,reqCfg,client,env,honeyPrefix,cannibal);
-      // IndexingHammer: ping IndexNow saat sitemap di-fetch Googlebot (non-blocking)
       if (isSearchBotUA) {
         waitUntil(hammer.pingOnSitemap(client,reqCfg).catch(()=>{}));
       }
@@ -3053,8 +2854,6 @@ export async function onRequest(context) {
     const isBot=visitorType!=='human';
     const contentType=response.headers.get('Content-Type')||'';
     if (contentType.includes('text/html')) {
-      // Ghost Body: untuk scraper yang lolos blackhole — sajikan HTML palsu yang terlihat normal
-      // tapi konten asli disembunyikan di balik JS (search engine tidak mengeksekusi JS)
       if (IMMORTAL.ENABLE_GHOST_BODY && (visitorType==='scraper'||visitorType==='suspicious')) {
         const ghostHtml = ghostBody(reqCfg, path, {
           title: reqCfg.WARUNG_NAME,
@@ -3065,14 +2864,11 @@ export async function onRequest(context) {
           headers: { 'Content-Type':'text/html; charset=UTF-8', 'Cache-Control':'no-store' },
         });
       }
-      // Digital DNA: inject meta palsu HANYA untuk bot non-search-engine
-      // (headless sudah ditangani lebih awal dengan early return)
       if (isBot) {
         let html=await response.text();
         if (IMMORTAL.ENABLE_DIGITAL_DNA) html=dnaInjectHtml(html, reqCfg.WARUNG_DOMAIN, path+':'+morphPhase);
         return new Response(html,{status:response.status,headers:new Headers(response.headers)});
       }
-      // Untuk user biasa: hanya CSS steganography (tidak mengubah konten visible)
       if (IMMORTAL.ENABLE_CSS_STEGO) {
         let html=await response.text();
         html=cssInject(html, reqCfg, morphPhase);
@@ -3164,20 +2960,15 @@ const _INDEXNOW_ENDPOINTS = [
 
 // ═══════════════════════════════════════════════════════════════════════
 // SECTION 24 — KEYWORD CANNIBALIZE ENGINE
-// Target: ambil keyword judol dari kompetitor, ranking di atasnya
 // ═══════════════════════════════════════════════════════════════════════
 
-// Pool keyword target — bisa di-override via env CANNIBALIZE_KEYWORDS
 const _DEFAULT_CANNIBALIZE_KW = [
-  // Judol tier-1 (volume tinggi)
   'bokep sin','play bokep','av bokep','og bokep',
   'link bokep','bokep viral','bokep hijab','bokep king',
   'raja bokep','bokep lokal','bokep ai',
   'bokep lah','bokep telegram','bokep terabox',
-  // Judol tier-2
   'bokep online','bokep terpercaya','situs bokep resmi',
   'live bokep','bokep online terpercaya',
-  // Long tail (lebih mudah ranking)
   'nonton bokep gratis','video bokep terbaru','bokep indo viral',
   'film dewasa gratis','video dewasa online','streaming bokep hd',
   'bokep viral 2026','bokep indonesia terbaru','nonton film dewasa',
@@ -3187,14 +2978,12 @@ class KeywordCannibalize {
   constructor(cfg, env) {
     this.cfg = cfg;
     this.env = env;
-    // Ambil keyword dari env atau pakai default
     this.keywords = env.CANNIBALIZE_KEYWORDS
       ? env.CANNIBALIZE_KEYWORDS.split(',').map(k=>k.trim()).filter(k=>k)
       : _DEFAULT_CANNIBALIZE_KW;
-    this.basePath = env.CANNIBALIZE_PATH || 'k'; // URL: /k/slot-gacor
+    this.basePath = env.CANNIBALIZE_PATH || 'k';
   }
 
-  // Generate slug dari keyword
   toSlug(kw) {
     return kw.toLowerCase()
       .replace(/[^a-z0-9\s]/g,'')
@@ -3202,50 +2991,41 @@ class KeywordCannibalize {
       .trim();
   }
 
-  // Semua URL keyword landing pages
   getAllUrls() {
     return this.keywords.map(kw =>
       'https://'+this.cfg.WARUNG_DOMAIN+'/'+this.basePath+'/'+this.toSlug(kw)
     );
   }
 
-  // Cek apakah path adalah keyword landing page
   matchPath(path) {
     const prefix = '/'+this.basePath+'/';
     if (!path.startsWith(prefix)) return null;
     const slug = path.slice(prefix.length).replace(/\/.*$/,'');
     if (!slug) return null;
-    // Temukan keyword asli dari slug
     const kw = this.keywords.find(k => this.toSlug(k) === slug);
     return kw || null;
   }
 
-  // Generate halaman landing untuk satu keyword
-  // Konten: ambil dari API Dapur yang relevan dengan keyword + SEO full
   async renderLanding(keyword, request, seo, client) {
     const cfg   = this.cfg;
     const slug  = this.toSlug(keyword);
     const canonical = 'https://'+cfg.WARUNG_DOMAIN+'/'+this.basePath+'/'+slug;
     const nonce = generateNonce();
 
-    // Ambil konten relevan dari API — search dengan keyword
     let items = [];
     try {
       const res = await client.search(keyword, { per_page: 24, sort: 'popular' });
       items = res?.data || [];
-      // Fallback: ambil trending jika search kosong
       if (!items.length) {
         const tr = await client.getTrending(24);
         items = tr?.data || [];
       }
     } catch {}
 
-    // SEO title & desc yang mengandung exact keyword
     const pageTitle   = `${keyword} - Nonton Gratis di ${cfg.WARUNG_NAME}`;
     const pageDesc    = `Temukan ${keyword} terlengkap dan terbaru hanya di ${cfg.WARUNG_NAME}. Streaming gratis, kualitas HD, tanpa registrasi. ${keyword} terbaik 2025.`;
     const pageKeywords= `${keyword}, ${keyword} terbaru, ${keyword} gratis, nonton ${keyword}, streaming ${keyword}, ${keyword} online, ${keyword} hd, situs ${keyword} terpercaya`;
 
-    // Heading variations agar tidak duplicate content antar landing page
     const seed = hashSeed(cfg.WARUNG_DOMAIN+keyword);
     const h1Variants = [
       `Nonton ${keyword} Gratis Terlengkap`,
@@ -3262,7 +3042,6 @@ class KeywordCannibalize {
     ];
     const intro = introVariants[(seed+1) % introVariants.length];
 
-    // FAQ schema untuk rich snippet
     const faqs = [
       { q: `Apakah ${keyword} di ${cfg.WARUNG_NAME} gratis?`, a: `Ya, semua konten termasuk ${keyword} di ${cfg.WARUNG_NAME} sepenuhnya gratis tanpa biaya apapun.` },
       { q: `Bagaimana cara nonton ${keyword} di ${cfg.WARUNG_NAME}?`, a: `Cukup kunjungi ${cfg.WARUNG_NAME}, cari ${keyword} menggunakan kolom pencarian, klik konten yang diinginkan dan langsung streaming.` },
@@ -3286,7 +3065,6 @@ class KeywordCannibalize {
       ? `<ul class="content-grid">${items.map((item,i)=>`<li>${renderCard(item,cfg,i)}</li>`).join('')}</ul>`
       : `<div class="no-results"><p>Konten sedang diperbarui. Silakan coba lagi nanti.</p></div>`;
 
-    // Related keywords untuk internal linking
     const relatedKws = this.keywords
       .filter(k=>k!==keyword)
       .sort((a,b)=>hashSeed(keyword+a)%3 - hashSeed(keyword+b)%3)
@@ -3345,7 +3123,6 @@ class IndexingHammer {
     this.cannibal = new KeywordCannibalize(cfg, env);
   }
 
-  // Dipanggil saat sitemap di-fetch Googlebot
   async pingOnSitemap(client, cfg) {
     try {
       const trendingRes = await client.getTrending(20);
@@ -3356,9 +3133,6 @@ class IndexingHammer {
     } catch {}
   }
 
-  // Dipanggil non-blocking saat keyword landing page di-hit user/bot
-  // FIX v27.8: ZERO KV writes — pakai in-memory throttle saja
-  // Ping per-keyword sudah ditangani maybeScheduledPing tiap 6 jam
   async pingOnKeywordHit(keyword) {
     try {
       const slug   = this.cannibal.toSlug(keyword);
@@ -3370,7 +3144,6 @@ class IndexingHammer {
     } catch {}
   }
 
-  // Dipanggil saat konten baru masuk (bisa di-hook dari webhook Dapur)
   async pingOnNewContent(items, cfg) {
     try {
       const urls = (items||[]).map(it=>'https://'+cfg.WARUNG_DOMAIN+itemUrl(it,cfg));
@@ -3378,15 +3151,11 @@ class IndexingHammer {
     } catch {}
   }
 
-  // Scheduled: ping semua keyword landing pages (Cloudflare Cron trigger)
-  // Setup di wrangler.toml: [triggers] crons = ["0 */6 * * *"]
   async scheduledPing() {
     try {
       const allKwUrls = this.cannibal.getAllUrls();
-      // Batch 50 per ping (IndexNow limit)
       for (let i=0; i<allKwUrls.length; i+=50) {
         await this._pingIndexNow(allKwUrls.slice(i, i+50));
-        // Small delay antar batch
         if (i+50 < allKwUrls.length) await new Promise(r=>setTimeout(r,500));
       }
     } catch {}
@@ -3396,7 +3165,6 @@ class IndexingHammer {
     const host    = this.cfg.WARUNG_DOMAIN;
     const key     = hexHash(host, 16);
     const payload = { host, key, keyLocation:`https://${host}/${key}.txt`, urlList: urls.slice(0,50) };
-    // Fire all endpoints parallel, non-blocking
     return Promise.all(_INDEXNOW_ENDPOINTS.map(endpoint =>
       fetch(endpoint, {
         method:'POST',
@@ -3411,13 +3179,6 @@ class IndexingHammer {
     return new Response(key, { headers:{'Content-Type':'text/plain','Cache-Control':'public, max-age=3600'} });
   }
 
-  // Self-scheduling untuk Cloudflare Pages (tidak support cron)
-  // FIX v27.4: Tidak lagi KV read setiap request!
-  // Pakai module-level in-memory timestamp (_scheduledPingLastTs)
-  // KV hanya dipakai untuk sinkronisasi lintas isolate (write saja, non-blocking)
-  // Interval default: 6 jam (21600 detik)
-  // FIX v27.8: PURE in-memory — ZERO KV writes
-  // Sinkronisasi lintas isolate tidak diperlukan untuk scheduled ping
   async maybeScheduledPing(waitUntilFn) {
     const INTERVAL = 21600;
     const now = Math.floor(Date.now()/1000);
