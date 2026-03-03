@@ -1475,11 +1475,13 @@ class SeoHelper {
 
 function sanitizeAdCode(code) {
   if (!code) return '';
-  // Hanya strip event handler inline dari tag HTML (bukan isi script)
-  // Penting: jangan hapus content <script> karena AdProvider.push() butuh itu
+  // Hanya strip event handler inline dari tag <ins> dan <a> saja.
+  // <div> dan <iframe> TIDAK distrip karena popunder (JuicyAds, dll) menggunakan
+  // handler onclick/onload di elemen tersebut untuk trigger iklan.
+  // Penting: jangan hapus content <script> karena AdProvider.push() butuh itu.
   return code
-    .replace(/(<(?:ins|iframe|div|a)\b[^>]*)\son\w+="[^"]*"/gi, '$1')
-    .replace(/(<(?:ins|iframe|div|a)\b[^>]*)\son\w+='[^']*'/gi, '$1');
+    .replace(/(<(?:ins|a)\b[^>]*)\son\w+="[^"]*"/gi, '$1')
+    .replace(/(<(?:ins|a)\b[^>]*)\son\w+='[^']*'/gi, '$1');
 }
 
 function getAdsSlots(cfg) {
@@ -2029,13 +2031,13 @@ function renderHead({ title, desc, canonical, ogImage, ogType, keywords, noindex
   const dapurDomain = (cfg._env?.DAPUR_BASE_URL||'https://dapur.dukunseo.com').replace(/https?:\/\//,'').split('/')[0];
   const csp = [
     `default-src 'self' https://${cfg.WARUNG_DOMAIN}`,
-    `script-src 'self' 'nonce-${nonce}'${extraNonces.map(n=>` 'nonce-${n}'`).join('')} https://*.magsrv.com https://a.magsrv.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://cdnjs.cloudflare.com https://fonts.googleapis.com`,
+    `script-src 'self' 'nonce-${nonce}'${extraNonces.map(n=>` 'nonce-${n}'`).join('')} https://*.magsrv.com https://a.magsrv.com https://*.juicyads.com https://*.juicyadserve.com https://*.juicyadserver.com https://ads.juicyads.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://cdnjs.cloudflare.com https://fonts.googleapis.com`,
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com`,
     `font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com`,
     `img-src 'self' data: blob: https:`,
     `media-src 'self' blob: https:`,
-    `frame-src 'self' https://*.magsrv.com https://${dapurDomain} https://${cfg.WARUNG_DOMAIN} https://googleads.g.doubleclick.net`,
-    `connect-src 'self' https://${cfg.WARUNG_DOMAIN} https://${dapurDomain} https://*.magsrv.com https://pagead2.googlesyndication.com`,
+    `frame-src 'self' https://*.magsrv.com https://${dapurDomain} https://${cfg.WARUNG_DOMAIN} https://googleads.g.doubleclick.net https://*.juicyads.com https://*.juicyadserve.com https://*.juicyadserver.com`,
+    `connect-src 'self' https://${cfg.WARUNG_DOMAIN} https://${dapurDomain} https://*.magsrv.com https://*.juicyads.com https://*.juicyadserve.com https://*.juicyadserver.com https://pagead2.googlesyndication.com`,
     `object-src 'none'`,`base-uri 'self'`,`form-action 'self'`,`upgrade-insecure-requests`,
   ].join('; ');
 
@@ -2053,8 +2055,11 @@ ${lcpPreload}${prevLink}${nextLink}
 <link rel="dns-prefetch" href="https://fonts.googleapis.com">
 <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
 <link rel="dns-prefetch" href="https://a.magsrv.com">
+<link rel="dns-prefetch" href="https://ads.juicyads.com">
+<link rel="dns-prefetch" href="https://www.juicyads.com">
 <link rel="dns-prefetch" href="${h(cfg.DAPUR_BASE_URL||'https://dapur.dukunseo.com')}">
 <link rel="preconnect" href="https://a.magsrv.com" crossorigin>
+<link rel="preconnect" href="https://ads.juicyads.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 ${criticalCss}
