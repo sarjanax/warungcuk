@@ -5,6 +5,217 @@
  * ║   Author  : dukunseo.com                                                 ║
  * ║   Lisensi : Hak Cipta Seluruh Alam Gaib — nyalin = dikutuk linuwih     ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ *  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+ *  🏮 MANUNGSO PALING WANI PUN WEDI MOCO FILE IKI TEKAN RAMPUNG.
+ *
+ *     Iki dudu file biasa. Iki KITAB SANTET SEO TERTINGGI —
+ *     diracik nang pujasera tua sing wis 40 taun ngadeg nang
+ *     perempatan wingit, dijaga wewe gombel turun-temurun,
+ *     disegel nganggo tumbal pitik cemani pas malam Suro.
+ *
+ *     Saben baris kode iki mengandung rajah. Saben fungsi iki
+ *     wis diberkahi dukun dari tujuh penjuru pujasera jagad maya.
+ *     DNS-mu wis tercatat nang buku besar alam gaib.
+ *
+ *     SOPO SING WANI NYALIN TANPO IZIN MBAH DUKUN SEO —
+ *     domain-e bakal dihapus seko indeks, traffic-e ilang koyok
+ *     asap menyan, duitnya mbledos tanpa sisa, kompetitore naik
+ *     kaca siji, lan awakmu dewe muter-muter nang halaman 404
+ *     seumur urip. Wis tak kandani. Ojo nyesel.
+ *  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+ *
+ *  ┌────────────────────────────────────────────────────────────────────┐
+ *  │   B I S M I L L A H   P U J A S E R A   P E S U G I H A N        │
+ *  └────────────────────────────────────────────────────────────────────┘
+ *
+ *  Cak, iki dudu warung pentol, dudu warung kopi, dudu warung lodeh.
+ *  Iki PUJASERA — satu atap, satus warung, satus jenis pesugihan.
+ *  Saben stan punya gaman dewe-dewe. Saben slot punya rajah dewe.
+ *  Kabeh mlaku bersamaan koyok orkestra dukun di pujasera keramat.
+ *
+ *  Kompetitor ndelok source kode? Raimu dewe, cuk.
+ *  Mbok tiru pun gak iso — saben domain DNA-ne bedo kabeh.
+ *  Iki file siji, dipasang nang atus domain, mlaku dewe
+ *  tanpo tidur, tanpo mangan, tanpo isin, tanpo ampun.
+ *
+ *  ╔══════════════════════════════════════════════════════════════════╗
+ *  ║       S T A N - S T A N   S A K R A L   P U J A S E R A         ║
+ *  ║         10 Stan Gaib Tertanam Njero Satu Atap File Iki           ║
+ *  ╚══════════════════════════════════════════════════════════════════╝
+ *
+ *  🏮【 STAN I 】RAJAH NIAT — Digital DNA + LSI Injection (50%)
+ *  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ *  Stan pertama pujasera — dapur rahasia DNA kelas atas.
+ *  Saben domain duwe wajah dewe. Google gak iso ndeteksi network.
+ *  Mirip saudara warung tapi bedo nasib SERP-e kabeh.
+ *  LSI disuntik 50% acak — setiap pembukaan rasa bedo.
+ *  Bot nyolong source? Dapetke DNA yang berbeda tiap hari.
+ *  Iki stan paling rame disatroni kompetitor, tapi ora ono sing iso nyalin.
+ *
+ *  🏮【 STAN II 】ALKEMIS SEMESTA — Internal Linking Cerdas
+ *  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ *  Stan alkemis pujasera — tempat ngubah teks biasa dadi emas ranking.
+ *  Anchor text 6 variasi, relevance scoring, anti duplikat ketat.
+ *  Network mode: gabung index seko semua sister domain — satu jiwa.
+ *  Link-e alami koyok pelanggan pujasera sing jalan sendiri
+ *  dari stan satu ke stan lain tanpa disuruh. Ora koyok robot.
+ *  Kompetitor link manual, awakdewe link otomatis cerdas sakti.
+ *
+ *  🏮【 STAN III 】PATI ANGIN — Auto Canonical Cluster
+ *  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ *  Stan pengarah pujasera — semua jalan berujung satu kassa utama.
+ *  URL salah? Langsung 301 diarahkan nang slug terkuat otomatis.
+ *  Crawl budget kompetitor mati nang redirect lorong selamanya.
+ *  Koyok pujasera sing punya satu pintu masuk — semua tamu
+ *  diarahkan ke kasir utama, gak ada yang nyasar ke dapur.
+ *
+ *  🏮【 STAN IV 】JEBAKAN BETMEN PUJASERA — Honeypot v2 Maze Loop
+ *  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ *  Stan jebakan pujasera — keliatan koyok stan makan biasa,
+ *  tapi siapapun sing masuk tanpo izin bakal tersesat selamanya.
+ *  30+ bot dikenal, masuk honeypot, muter-muter koyok pengunjung
+ *  pujasera sing lupa parkiran, gak iso metu sampe kapok abadi.
+ *  Delay 800-2500ms per request. Drain CPU. Drain crawl budget.
+ *  Trap links nang saben footer — umpan tersebar di seluruh pujasera.
+ *  Ora ono sing lolos, rek. Siji pun ora.
+ *
+ *  🏮【 STAN V 】GENDRUWO SITEMAP — Video + Image Sitemap Komplit
+ *  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ *  Stan daftar menu pujasera — sing paling lengkap se-jagad maya.
+ *  xmlns:video aktif. Thumbnail masuk Google Video Search otomatis.
+ *  Image sitemap + Video sitemap jalan barengan koyok dua pramusaji
+ *  yang nawarin menu ke dua Google crawler sekaligus tanpo henti.
+ *  Kompetitor kirim sitemap kosong — awakdewe kirim ensiklopedi komplit.
+ *
+ *  🏮【 STAN VI 】PETHEK CEPET — IndexNow Bulk v2 (4 Endpoint)
+ *  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ *  Stan kurir pujasera — sing paling cepet ngasih kabar ke dunia.
+ *  4 endpoint sekaligus: api.indexnow.org, Bing, Yandex, Seznam.
+ *  Ping pas konten pertama kali dibuka — langsung teriak ke semua.
+ *  Ping terjadwal. Google Sitemap fallback. 100 domain = 100 sinyal.
+ *  Kompetitor nunggu Google merayap dateng dewe —
+ *  awakdewe wis ranking sebelum kompetitor selesai nyeduh kopi.
+ *
+ *  🏮【 STAN VII 】TAMENG BESI PUJASERA — CSP Dinamis Total
+ *  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ *  Stan satpam pujasera — tameng sing berubah ngikuti setiap ancaman.
+ *  Zero hardcode. Domain iklan diekstrak otomatis dari kode slot.
+ *  Ganti jaringan iklan? CSP pujasera ngikut dewe tanpo deploy ulang.
+ *  Koyok satpam sing tau otomatis wajah semua tamu VIP lan tamu
+ *  berbahaya — tanpa perlu daftar nama manual tiap harinya.
+ *
+ *  🏮【 STAN VIII 】KACAMATA GAIB — 103 Early Hints + Content-Visibility
+ *  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ *  Stan pramusaji pujasera paling cepet — hidangan wis nang meja
+ *  sebelum tamu selesai duduk. LCP turun 200-500ms.
+ *  Bot Google baca konten duluan sebelum manungso selesai loading.
+ *  Footer, related, seo-article skip render sampek discroll —
+ *  koyok menu di pujasera sing ditampilkan bertahap sesuai kebutuhan.
+ *  Hemat CPU, hemat bandwidth, hemat crawl budget, tetep mateni.
+ *
+ *  🏮【 STAN IX 】SEDULUR PAPAT — Hreflang Multi-Region
+ *  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ *  Stan cabang pujasera — satu manajer, empat penjuru wilayah.
+ *  ID, MY, SG via 1 env var. Auto swap domain per region otomatis.
+ *  Siji file pujasera, seratus domain, empat penjuru kiblat.
+ *  Koyok franchise pujasera sing cabangnya ada di mana-mana tapi
+ *  menunya disesuaikan cita rasa lokal tiap kota secara otomatis.
+ *
+ *  🏮【 STAN X 】ILMU KEBAL — Free Tier Efficiency Pujasera
+ *  ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+ *  Stan kasir pujasera — satu kassa, seribu transaksi, nol pemborosan.
+ *  _adsCspCache, IndexingHammer.get(), getConfig 1x call per isolate.
+ *  10ms CPU limit Cloudflare free tier? Wis diperhitungke kabeh.
+ *  Setiap milidetik dihitung koyok uang kembalian di kasir pujasera —
+ *  gak ono sing kebuang, gak ono kehabisan, selalu pas.
+ *  Gratis, tapi mateni. Luwih elek tuku hosting paling mahal pun.
+ *
+ * ══════════════════════════════════════════════════════════════════════
+ *  ☠  MENU RAHASIA — HANYA TERSEDIA DI PUJASERA NUKLIR SEJATI:
+ * ══════════════════════════════════════════════════════════════════════
+ *  ✗  DNA Pool 18+          → Keyword Dewasa + LSI Khusus 18+ per Stan
+ *  ✗  Bad Bot Detection v2  → 30+ Rajah Regex Lebih Brutal
+ *  ✗  Honeypot Maze Loop v3 → Delay 2000-5000ms, Total CPU Drain
+ *  ✗  D1 Blacklist          → Database Hitam Lintas Roh Isolate
+ *  ✗  Search Intent Hijack  → Mutasi Konten On-the-fly per Keyword Referrer
+ *  ✗  Auto Canonical v2     → Cluster Dinamis via Machine Learning Seed
+ *  ✗  Early Hints v2        → 103 + Server Push, LCP turun 500ms+
+ *  ✗  IndexNow Webhook      → Ping Real-time saat Dapur Update Konten
+ * ══════════════════════════════════════════════════════════════════════
+ *
+ * ── MANTRA ENV (Daftar Menu Warung Pujasera Gaib) ─────────────────────
+ *
+ *  == TAMPILAN / TEMA PUJASERA ==
+ *  THEME_ACCENT            Warna aksen utama                bawaan: #ffaa00
+ *  THEME_ACCENT2           Warna aksen kedua                bawaan: #ffc233
+ *  THEME_BG                Background (gelap pujasera)      bawaan: #0a0a0a
+ *  THEME_BG2               Background kartu stan            bawaan: #121212
+ *  THEME_BG3               Background hover stan            bawaan: #1a1a1a
+ *  THEME_FG                Warna teks papan menu            bawaan: #ffffff
+ *  THEME_FG_DIM            Warna teks harga redup           bawaan: #888888
+ *  THEME_BORDER            Warna border partisi stan        bawaan: #252525
+ *  THEME_FONT              Font papan nama pujasera         bawaan: (sistem)
+ *  THEME_NAV_STYLE         'dark' atau 'gold'               bawaan: dark
+ *  THEME_BADGE_HOT         Teks label stan paling laris     bawaan: HOT
+ *  THEME_PROMO_TEXT        Teks spanduk pintu masuk         bawaan: PREMIUM • 4K UHD • TANPA IKLAN
+ *  THEME_SHOW_PROMO        'true'/'false'                   bawaan: true
+ *  THEME_SHOW_TRENDING     'true'/'false'                   bawaan: true
+ *  THEME_GRID_COLS_MOBILE  Kolom grid HP (1/2)              bawaan: 2
+ *  THEME_CARD_RATIO        Rasio kartu konten (16/9, 2/3)   bawaan: 16/9
+ *
+ *  == STAN IKLAN (6 Slot Pendapatan Pujasera) ==
+ *  ADS_CODE_TOP_D/M        Stan iklan atas desktop / mobile (JuicyAds Banner)
+ *  ADS_CODE_BTM_D/M        Stan iklan bawah desktop / mobile (JuicyAds Banner)
+ *  ADS_CODE_SDB_D/M        Stan iklan sidebar desktop / mobile (JuicyAds Banner)
+ *  ADS_CODE_POPUNDER       Tuyul popunder JuicyAds — ngumpet di balik partisi stan
+ *
+ *  == KONFIGURASI JUICYADS ==
+ *  JUICYADS_ZONE_TOP_D     Zone ID untuk desktop top banner
+ *  JUICYADS_ZONE_TOP_M     Zone ID untuk mobile top banner
+ *  JUICYADS_ZONE_BTM_D     Zone ID untuk desktop bottom banner
+ *  JUICYADS_ZONE_BTM_M     Zone ID untuk mobile bottom banner
+ *  JUICYADS_ZONE_SDB_D     Zone ID untuk desktop sidebar banner
+ *  JUICYADS_ZONE_SDB_M     Zone ID untuk mobile sidebar banner
+ *  JUICYADS_ZONE_POPUNDER  Zone ID untuk popunder
+ *  JUICYADS_WIDTH          Lebar banner (default: 728)
+ *  JUICYADS_HEIGHT         Tinggi banner (default: 90)
+ *  JUICYADS_ADZONE         Adzone ID untuk popunder (default: 1001162)
+ *
+ *  == RAJAH IMMORTAL (Jimat Penjaga Seluruh Pujasera) ==
+ *  IMMORTAL_DIGITAL_DNA        'true'/'false'  DNA Stan aktif          bawaan: true
+ *  IMMORTAL_CSS_STEGO          'true'/'false'  Fingerprint CSS aktif   bawaan: true
+ *  IMMORTAL_GHOST_BODY         'true'/'false'  Tubuh Arwah aktif       bawaan: true
+ *  IMMORTAL_BLACKHOLE          'true'/'false'  Lubang Hitam aktif      bawaan: true
+ *  IMMORTAL_SACRIFICIAL_LAMB   'true'/'false'  Stan Tumbal aktif       bawaan: true
+ *  IMMORTAL_BLACKHOLE_MAX      Integer         Max korban per stan     bawaan: 50
+ *  IMMORTAL_SACRIFICE_ENERGY   Integer         Energi tumbal max       bawaan: 1000
+ *  IMMORTAL_RATE_WINDOW        Detik           Jendela satpam rate     bawaan: 60
+ *  IMMORTAL_RATE_MAX           Integer         Max tamu per jendela    bawaan: 120
+ *  IMMORTAL_SCRAPER_RATE_MAX   Integer         Max scraper jahat       bawaan: 10
+ *  IMMORTAL_CSS_OPACITY        Desimal         Opacity rajah fingerprint bawaan: 0.001
+ *  IMMORTAL_DNA_POOL           CSV keywords    Biji-biji DNA per stan  bawaan: built-in
+ *  IMMORTAL_LSI                JSON string     Peta sinonim DNA        bawaan: built-in
+ *  IMMORTAL_SINONIM            JSON string     Sinonim konten          bawaan: built-in
+ *
+ * ══════════════════════════════════════════════════════════════════════
+ *
+ *  "Ojo kagetan nek kompetitor tiba-tiba ilang seko SERP, cak.
+ *   Iku dudu kecelakaan. Iku dudu nasib biasa.
+ *   Iku takdir sing wis ditetapke nang pujasera keramat iki
+ *   sejak malam pertama file iki dipasang nang domain-e.
+ *
+ *   Pujasera iki ora butuh karyawan. Ora butuh manager.
+ *   Ora butuh supervisor. Mlaku dewe, ranking dewe,
+ *   ngumpulin duwit dewe, ngusir kompetitor dewe.
+ *
+ *   Siji file. Satus domain. Siji wengi malam Suro.
+ *   Cukup nggo nguasai seluruh SERP nang niche-mu."
+ *
+ *                           — Mbah Dukun SEO, dukunseo.com —
+ *                             [ Malam Suro, pas pujasera sepi tapi SERP rame ]
+ *
+ * ══════════════════════════════════════════════════════════════════════
  */
 'use strict';
 
@@ -25,26 +236,31 @@ const IMMORTAL = {
   ENABLE_SACRIFICIAL_LAMB:  true,
   BLACKHOLE_MAX_REQUESTS:   50,
   DNA_POOL: [
-    'bokep', 'porno', 'viral', 'hijab',
-    'tobrut', 'colmek', 'bugil', 'hiper',
-    'avtub', 'bokepsin', 'playbokep', 'hits', 'mantap',
-    'gratis', 'online', 'live', '24jam',
-    'film', 'video', 'streaming', 'nonton',
-    'terbaru', 'terlengkap', 'kualitas HD'
-  ],
-  LSI: {
-    'bokep': ['bacol', 'asuapn', 'bokeh', 'ngewe'],
-    'porno': ['mesum', 'cabul', 'skandal'],
-    'viral': ['hot', 'update', 'hits'],
-    'hijab': ['ukhti', 'uhkti', 'kedurung', 'jilbab'],
-    'tobrut': ['montok', 'toge', 'semok', 'bohay'],
-    'colmek': ['colok', 'omek', 'ngocok', 'kobel'],
-    'bugil': ['telanjang', 'buka bukaan', 'lepas baju'],
-    'hiper': ['sange', 'lonte', 'barbar'],
-    'avtub': ['bokeplah', 'avbokep', 'ngentub'],
-    'bokepsin': ['sangetube', 'lingbokep', 'indo18'],
-    'playbokep': ['bokepindoh', 'ruangbokep', 'simontok']
-  },
+
+  'bokep', 'porno', 'viral', 'hijab',
+  'tobrut', 'colmek', 'bugil', 'hiper',
+
+  'avtub', 'bokepsin', 'playbokep', 'hits', 'mantap',
+  'gratis', 'online', 'live', '24jam',
+
+  'film', 'video', 'streaming', 'nonton',
+  'terbaru', 'terlengkap', 'kualitas HD'
+],
+
+LSI: {
+  'bokep': ['bacol', 'asuapn', 'bokeh', 'ngewe'],
+  'porno': ['mesum', 'cabul', 'skandal'],
+  'viral': ['hot', 'update', 'hits'],
+  'hijab': ['ukhti', 'uhkti', 'kedurung', 'jilbab'],
+  'tobrut': ['montok', 'toge', 'semok', 'bohay'],
+  'colmek': ['colok', 'omek', 'ngocok', 'kobel'],
+  'bugil': ['telanjang', 'buka bukaan', 'lepas baju'],
+  'hiper': ['sange', 'lonte', 'barbar'],
+
+  'avtub': ['bokeplah', 'avbokep', 'ngentub'],
+  'bokepsin': ['sangetube', 'lingbokep', 'indo18'],
+  'playbokep': ['bokepindoh', 'ruangbokep', 'simontok']
+},
   CSS_OPACITY: 0.001,
   CSS_VARS: ['--primary-color','--secondary-color','--font-family','--spacing-unit','--border-radius','--transition-speed','--container-width','--header-height','--footer-padding'],
   SACRIFICE_ENERGY_MAX: 1000,
@@ -83,6 +299,7 @@ function logError(context, error, request = null, ctx = null) {
 class LRUMap extends Map {
   constructor(maxSize = 100) { super(); this.maxSize = maxSize; }
   get(key) {
+
     if (!super.has(key)) return undefined;
     const val = super.get(key);
     super.delete(key);
@@ -90,6 +307,7 @@ class LRUMap extends Map {
     return val;
   }
   set(key, value) {
+
     if (this.has(key)) this.delete(key);
     else if (this.size >= this.maxSize) this.delete(this.keys().next().value);
     return super.set(key, value);
@@ -109,6 +327,7 @@ class QCache {
     return v;
   }
   set(key, value) {
+
     if (this.data.has(key)) { this.data.delete(key); this.ts.delete(key); }
     else if (this.data.size >= this.maxSize) this._del(this.data.keys().next().value);
     this.data.set(key, value); this.ts.set(key, Date.now());
@@ -125,22 +344,27 @@ class QCache {
 let _scheduledPingLastTs = 0;
 
 const _dapurConfigMemCache = new LRUMap(10);
+
 const _blCacheTTL = 300000;
+
 const _hmacCache    = new LRUMap(20);
+
 const _blCache      = new LRUMap(500);
 const _rlMemory     = new LRUMap(1000);
 const _morphCache   = new LRUMap(20);
 const _themeCache   = new LRUMap(10);
 const _adsSlotsCache= new LRUMap(10);
 const _headersCache = new LRUMap(50);
-const _dnaCache     = new QCache(500, 60000);
-const _apiCache     = new QCache(500, 300000);
-const _pingCache    = new QCache(200, 3600000);
-const _robotsCache  = new QCache(50,  86400000);
+const _dnaCache     = new QCache(500, 60000);   // DNA generation results
+const _apiCache     = new QCache(500, 300000);  // API response cache (TTL 5 menit)
+const _pingCache    = new QCache(200, 3600000); // Ping dedup cache (TTL 1 jam)
+const _robotsCache  = new QCache(50,  86400000);// robots.txt cache (TTL 24 jam)
 const _blackholeMap = new LRUMap(1000);
 const _sacrificeMap = new LRUMap(50);
 const _immortalEnvCache = new LRUMap(5);
-const _adsCspCache  = new LRUMap(10);
+// Cache ads/CSP domain extraction — mahal karena regex, jangan ulang tiap renderHead
+const _adsCspCache  = new LRUMap(10); // key = hash kode iklan
+
 const _seoCache        = new LRUMap(10);
 const _cannibalCache   = new LRUMap(10);
 const _hammerCache     = new LRUMap(10);
@@ -175,21 +399,23 @@ function applyImmortalEnv(env, fc=_DEFAULT_CONFIG) {
     const pool = dnaRaw.split(',').map(k=>k.trim()).filter(k=>k.length>1);
     if (pool.length >= 5) dnaPool = pool;
   }
+  // LSI override — JSON string di config.json
   const lsiRaw = env.IMMORTAL_LSI ?? fc.IMMORTAL_LSI;
   let lsiMap = IMMORTAL.LSI;
   if (lsiRaw) {
     try {
       const parsed = typeof lsiRaw === 'string' ? JSON.parse(lsiRaw) : lsiRaw;
       if (parsed && typeof parsed === 'object' && Object.keys(parsed).length >= 3) lsiMap = parsed;
-    } catch(e) {  }
+    } catch(e) { /* JSON invalid, pakai default */ }
   }
+  // SINONIM override — JSON string di config.json
   const sinonimRaw = env.IMMORTAL_SINONIM ?? fc.IMMORTAL_SINONIM;
-  let sinonimMap = null;
+  let sinonimMap = null; // null = pakai _SINONIM global default
   if (sinonimRaw) {
     try {
       const parsed = typeof sinonimRaw === 'string' ? JSON.parse(sinonimRaw) : sinonimRaw;
       if (parsed && typeof parsed === 'object' && Object.keys(parsed).length >= 3) sinonimMap = parsed;
-    } catch(e) {  }
+    } catch(e) { /* JSON invalid, pakai default */ }
   }
   const result = Object.freeze({
     ENABLE_DIGITAL_DNA:      bool('IMMORTAL_DIGITAL_DNA',      IMMORTAL.ENABLE_DIGITAL_DNA),
@@ -229,7 +455,7 @@ function detectDomainInfo(env, request) {
 
 const _cfgCacheMap = new LRUMap(10);
 
-// ── DEFAULT CONFIG — IKLAN SUDAH DIKOSONGKAN ─────────────────────────────
+// ── DEFAULT CONFIG — edit langsung di sini, deploy ulang untuk apply ──────────
 const _DEFAULT_CONFIG = {
   WARUNG_NAME:       'Nama Situs',
   WARUNG_DOMAIN:     'situs1.com',
@@ -248,6 +474,9 @@ const _DEFAULT_CONFIG = {
   SEO_TWITTER_SITE:  '',
   SEO_OG_IMAGE_W:    1200,
   SEO_OG_IMAGE_H:    630,
+  // Hreflang multi-region — CSV format "lang:domain"
+  // Contoh: "id:situs.com,ms:situs.my,en:situs.sg"
+  // Kosong = hanya hreflang bahasa utama
   SEO_HREFLANG_REGIONS: '',
 
   PATH_CONTENT:      'tonton',
@@ -294,13 +523,27 @@ const _DEFAULT_CONFIG = {
   ADS_LABEL:         '',
   ADS_MID_GRID_AFTER:4,
   
-  // ✅ SEMUA IKLAN TELAH DIKOSONGKAN - SIAP DIISI VIA ENV
-  ADS_CODE_TOP_D:    '',
-  ADS_CODE_TOP_M:    '',
-  ADS_CODE_CNT_D:    '',
-  ADS_CODE_CNT_M:    '',
-  ADS_CODE_SDB_D:    '',
-  ADS_CODE_SDB_M:    '',
+  // JUICYADS CONFIGURATION
+  JUICYADS_WIDTH: '728',
+  JUICYADS_HEIGHT: '90',
+  JUICYADS_ADZONE: '1001162',
+  
+  // Zone IDs for different placements
+  JUICYADS_ZONE_TOP_D: '',
+  JUICYADS_ZONE_TOP_M: '',
+  JUICYADS_ZONE_BTM_D: '',
+  JUICYADS_ZONE_BTM_M: '',
+  JUICYADS_ZONE_SDB_D: '',
+  JUICYADS_ZONE_SDB_M: '',
+  JUICYADS_ZONE_POPUNDER: '',
+  
+  // Legacy variables for backward compatibility
+  ADS_CODE_TOP_D: '',
+  ADS_CODE_TOP_M: '',
+  ADS_CODE_CNT_D: '',
+  ADS_CODE_CNT_M: '',
+  ADS_CODE_SDB_D: '',
+  ADS_CODE_SDB_M: '',
   ADS_CODE_POPUNDER: '',
 
   CANNIBALIZE_PATH:  'viral',
@@ -308,6 +551,9 @@ const _DEFAULT_CONFIG = {
 
   INTENT_AMPLIFIER_ENABLED: true,
   ALCHEMIST_ENABLED: true,
+  // Network Mode — CSV domain saudara untuk cross-domain internal linking
+  // Contoh: "situs2.com,situs3.com,situs4.com"
+  // Kosong = hanya link ke domain sendiri
   ALCHEMIST_NETWORK_DOMAINS: '',
 
   IMMORTAL_DIGITAL_DNA:      true,
@@ -331,6 +577,8 @@ function safeParseInt(val, defaultValue) {
   return isNaN(parsed) ? defaultValue : Math.max(0, parsed);
 }
 function getConfig(env, request) {
+  // Prioritas: env var Cloudflare → _DEFAULT_CONFIG (hardcoded)
+  // Secrets (DAPUR_API_KEY) hanya dari env — tidak pernah dari default config
   const fc = _DEFAULT_CONFIG;
   const e  = (key) => env[key] || fc[key] || '';
   const eb = (key, def) => {
@@ -352,10 +600,11 @@ function getConfig(env, request) {
     env.THEME_PROMO_TEXT, env.THEME_SHOW_PROMO, env.THEME_SHOW_TRENDING,
     env.THEME_GRID_COLS_MOBILE, env.THEME_CARD_RATIO,
     env.ADS_ENABLED, env.ADS_ADSENSE_CLIENT, env.ADS_LABEL,
-    env.ADS_CODE_TOP_D, env.ADS_CODE_TOP_M,
-    env.ADS_CODE_CNT_D, env.ADS_CODE_CNT_M,
-    env.ADS_CODE_SDB_D, env.ADS_CODE_SDB_M,
-    env.ADS_CODE_POPUNDER,
+    env.JUICYADS_WIDTH, env.JUICYADS_HEIGHT, env.JUICYADS_ADZONE,
+    env.JUICYADS_ZONE_TOP_D, env.JUICYADS_ZONE_TOP_M,
+    env.JUICYADS_ZONE_BTM_D, env.JUICYADS_ZONE_BTM_M,
+    env.JUICYADS_ZONE_SDB_D, env.JUICYADS_ZONE_SDB_M,
+    env.JUICYADS_ZONE_POPUNDER,
   ].map(v => v || '').join('|');
   const cacheKey = domain + ':' + envSig;
   const shouldCache = !!env.WARUNG_DOMAIN && !domain.endsWith('.pages.dev') && !domain.endsWith('.workers.dev');
@@ -363,7 +612,9 @@ function getConfig(env, request) {
   const baseUrl  = (env.WARUNG_BASE_URL || fc.WARUNG_BASE_URL || ('https://' + domain)).replace(/\/$/, '');
   const basePath = new URL(baseUrl).pathname.replace(/\/$/, '');
   const cfg = {
+    // Secrets: hanya dari env, tidak pernah dari file config
     DAPUR_API_KEY:     env.DAPUR_API_KEY  || '',
+
     DAPUR_BASE_URL:    (env.DAPUR_BASE_URL || fc.DAPUR_BASE_URL || '').replace(/\/$/, ''),
     DAPUR_CACHE_TTL:   ei('DAPUR_CACHE_TTL', 300),
     DAPUR_DEBUG:       eb('DAPUR_DEBUG', false),
@@ -401,6 +652,29 @@ function getConfig(env, request) {
     ADS_ADSENSE_CLIENT:    e('ADS_ADSENSE_CLIENT') || '',
     ADS_LABEL:             '',
     ADS_MID_GRID_AFTER:   ei('ADS_MID_GRID_AFTER', 6),
+    
+    // JUICYADS Configuration
+    JUICYADS_WIDTH: e('JUICYADS_WIDTH') || '728',
+    JUICYADS_HEIGHT: e('JUICYADS_HEIGHT') || '90',
+    JUICYADS_ADZONE: e('JUICYADS_ADZONE') || '1001162',
+    
+    JUICYADS_ZONE_TOP_D: e('JUICYADS_ZONE_TOP_D') || '',
+    JUICYADS_ZONE_TOP_M: e('JUICYADS_ZONE_TOP_M') || '',
+    JUICYADS_ZONE_BTM_D: e('JUICYADS_ZONE_BTM_D') || '',
+    JUICYADS_ZONE_BTM_M: e('JUICYADS_ZONE_BTM_M') || '',
+    JUICYADS_ZONE_SDB_D: e('JUICYADS_ZONE_SDB_D') || '',
+    JUICYADS_ZONE_SDB_M: e('JUICYADS_ZONE_SDB_M') || '',
+    JUICYADS_ZONE_POPUNDER: e('JUICYADS_ZONE_POPUNDER') || '',
+    
+    // Legacy ADS_CODE vars for backward compatibility
+    ADS_CODE_TOP_D: e('ADS_CODE_TOP_D') || '',
+    ADS_CODE_TOP_M: e('ADS_CODE_TOP_M') || '',
+    ADS_CODE_CNT_D: e('ADS_CODE_CNT_D') || '',
+    ADS_CODE_CNT_M: e('ADS_CODE_CNT_M') || '',
+    ADS_CODE_SDB_D: e('ADS_CODE_SDB_D') || '',
+    ADS_CODE_SDB_M: e('ADS_CODE_SDB_M') || '',
+    ADS_CODE_POPUNDER: e('ADS_CODE_POPUNDER') || '',
+    
     CONTACT_EMAIL:         e('CONTACT_EMAIL')      || ('admin@' + domain),
     CONTACT_EMAIL_NAME:    e('CONTACT_EMAIL_NAME') || (name + ' Admin'),
     THEME_ACCENT:          e('THEME_ACCENT')        || '#ffaa00',
@@ -423,13 +697,6 @@ function getConfig(env, request) {
       return /^\d+\/\d+$/.test(raw) ? raw : '16/9';
     })(),
     THEME_NAV_STYLE:       e('THEME_NAV_STYLE')     || 'dark',
-    ADS_CODE_TOP_D:    e('ADS_CODE_TOP_D')    || fc.ADS_CODE_TOP_D    || '',
-    ADS_CODE_TOP_M:    e('ADS_CODE_TOP_M')    || fc.ADS_CODE_TOP_M    || '',
-    ADS_CODE_CNT_D:    e('ADS_CODE_CNT_D')    || fc.ADS_CODE_CNT_D    || '',
-    ADS_CODE_CNT_M:    e('ADS_CODE_CNT_M')    || fc.ADS_CODE_CNT_M    || '',
-    ADS_CODE_SDB_D:    e('ADS_CODE_SDB_D')    || fc.ADS_CODE_SDB_D    || '',
-    ADS_CODE_SDB_M:    e('ADS_CODE_SDB_M')    || fc.ADS_CODE_SDB_M    || '',
-    ADS_CODE_POPUNDER: e('ADS_CODE_POPUNDER') || fc.ADS_CODE_POPUNDER || '',
     INTENT_AMPLIFIER_ENABLED: eb('INTENT_AMPLIFIER_ENABLED', true),
     ALCHEMIST_ENABLED:        eb('ALCHEMIST_ENABLED',        true),
     ALCHEMIST_NETWORK_DOMAINS: e('ALCHEMIST_NETWORK_DOMAINS') || '',
@@ -456,9 +723,11 @@ function hexHash(str, len = 32) {
 }
 
 function clsHash(domain, name) {
+
   return '_' + hexHash(domain + ':cls:' + name, 6);
 }
 function idHash(domain, name) {
+
   return 'x' + hexHash(domain + ':id:' + name, 7);
 }
 function generateNonce() {
@@ -624,18 +893,23 @@ function isBlacklisted(ip) {
 async function handleHoneypot(request, env) {
   const ip = request.headers.get('CF-Connecting-IP')||'0.0.0.0';
   const ua = request.headers.get('User-Agent')||'';
+  // Catat IP di blacklist
   _blCache.set(ip, { blocked: true, ts: Date.now() });
   if (env.DB) {
     env.DB.prepare('INSERT OR IGNORE INTO blocked_ips VALUES (?, ?)').bind(ip, Date.now()).run().catch(()=>{});
   }
 
+  // ── Maze v2 — bot masuk loop crawl tak berujung ────────────────────────────
+  // Tiap URL generate 8 link baru deterministik dari path — infinite depth
   const url    = new URL(request.url);
   const pathSeed = hexHash(url.pathname + ':' + (env.HONEYPOT_PREFIX||'trap'), 8);
   const prefix = (env.HONEYPOT_PREFIX || 'trap').replace(/[^a-z0-9\-]/gi,'');
+  // Generate 8 dead-end child links dari path ini
   const mazeLinks = Array.from({length:8}, (_,i) => {
     const child = hexHash(pathSeed + ':maze:' + i, 10);
     return `<a href="/${prefix}/${child}" rel="nofollow">${child}</a>`;
   });
+  // Simulasi halaman yang "sedang dimuat" — tambah delay palsu di meta refresh
   const tl = parseInt(pathSeed.slice(0,4), 16) % 900 + 100;
   const html = `<!DOCTYPE html><html lang="id"><head>
 <meta charset="UTF-8"><title>Loading... ${tl}ms</title>
@@ -650,6 +924,7 @@ a{color:#111;text-decoration:none;display:inline-block;margin:2px 4px}
 <p class="t">© ${new Date().getFullYear()}</p>
 </body></html>`;
 
+  // Tambah artificial delay 800-2500ms — drain CPU time bot
   const delay = (parseInt(pathSeed.slice(0,2),16) % 17) * 100 + 800;
   await new Promise(r => setTimeout(r, delay));
 
@@ -680,6 +955,7 @@ async function blackholeCapture(ip, isScraper, env, immortal) {
   _blackholeMap.set(ip, memState);
   if (memState.count > immortal.BLACKHOLE_MAX_REQUESTS) {
     const tl = Math.floor(Math.random()*1000);
+
     return `<!DOCTYPE html><html><head><title>Loading Timeline ${tl}...</title>
 <style>
 body{background:#000;color:#0f0;font-family:monospace;padding:50px}
@@ -705,6 +981,7 @@ function sacrificeRedirect(request, domain, immortal) {
   let sacrifice = null;
   for (const [k,v] of _sacrificeMap) { if (v.status==='active') { sacrifice=v; break; } }
   if (!sacrifice) {
+
     const toDelete = [];
     for (const [k,v] of _sacrificeMap) { if (v.status==='sacrificed') toDelete.push(k); }
     for (const k of toDelete) _sacrificeMap.delete(k);
@@ -739,6 +1016,7 @@ function dnaGenerate(domain, path, immortal) {
 
   const pickWord = (s, i) => {
     let word = pool[(s+i*37) % pool.length];
+    // LSI injection — 50% chance (naik dari 30%), deterministik per domain+posisi
     const lsiSeed = hashSeed(domain+':'+i+':'+s);
     if ((lsiSeed % 10) < 5 && lsi[word]) { const arr=lsi[word]; word=arr[lsiSeed % arr.length]; }
     return word;
@@ -859,7 +1137,7 @@ class DapurClient {
 
     this.env           = env;
     this.ctx           = ctx;
-    this.db            = db;
+    this.db            = db;   // D1 binding — null jika tidak ada
     this.sinonim       = immortal?.SINONIM || null;
     this.domain        = cfg.WARUNG_DOMAIN;
     this.baseUrlSite   = cfg.WARUNG_BASE_URL;
@@ -985,6 +1263,7 @@ class DapurClient {
     const fetchUrl = url+qs;
     const ck = 'apicache:'+this.cachePrefix+':'+hexHash(fetchUrl,16);
 
+    // Endpoint yang TIDAK boleh di-cache — harus selalu fresh dari PHP
     const isNoCache = /\/media\/\d+$/.test(path)
       || /\/player-url\//.test(path)
       || /\/download-url\//.test(path)
@@ -995,9 +1274,11 @@ class DapurClient {
       return this._fetchAndStore(fetchUrl, ck, path, false);
     }
 
+    // Layer 1: Memory cache — paling cepat, 0ms
     const memHit = _apiCache.get(ck);
     if (memHit !== null) return memHit;
 
+    // Layer 2: D1 cache — ~1-5ms, persistent lintas edge & restart
     if (this.db) {
       try {
         const row = await this.db.prepare(
@@ -1005,12 +1286,14 @@ class DapurClient {
         ).bind(ck).first();
         if (row && row.expires_at > Date.now()) {
           const parsed = JSON.parse(row.body);
+          // Simpan kembali ke memory agar request berikutnya di node ini 0ms
           _apiCache.set(ck, parsed);
           return parsed;
         }
-      } catch(e) {  }
+      } catch(e) { /* D1 error tidak boleh crash halaman */ }
     }
 
+    // Layer 3: PHP backend — hit hanya saat benar-benar cache miss
     return this._fetchAndStore(fetchUrl, ck, path, useCache);
   }
 
@@ -1031,21 +1314,25 @@ class DapurClient {
       if (Array.isArray(data.data)) {
         bumbuItems(data.data, this.domain, this.sinonim);
       } else if (typeof data.data === 'object') {
+
         data.data = bumbuItem(data.data, this.domain, this.sinonim);
+
         if (Array.isArray(data.data?.related)) bumbuItems(data.data.related, this.domain, this.sinonim);
       }
     }
 
     if (useCache && data?.status !== 'error') {
+      // Simpan ke memory
       _apiCache.set(ck, data);
+      // Simpan ke D1 async — TTL per endpoint, tidak block response
       if (this.db && this.ctx) {
         const D1_TTL = {
-          '/media':      300_000,
-          '/trending':   600_000,
-          '/related':    600_000,
-          '/tags':     3_600_000,
-          '/categories':3_600_000,
-          '/album':      300_000,
+          '/media':      300_000,   // 5 menit
+          '/trending':   600_000,   // 10 menit
+          '/related':    600_000,   // 10 menit
+          '/tags':     3_600_000,   // 1 jam
+          '/categories':3_600_000,  // 1 jam
+          '/album':      300_000,   // 5 menit
         };
         const endpointKey = '/'+path.split('/').filter(Boolean)[0];
         const ttl = D1_TTL[endpointKey] || 300_000;
@@ -1070,6 +1357,7 @@ class DapurClient {
 }
 
 const _SINONIM = {
+
   'gratis':      ['gratis','free','tanpa biaya','bebas bayar','cuma-cuma','tidak berbayar'],
   'nonton':      ['nonton','tonton','saksikan','nikmati','simak','lihat'],
   'terbaru':     ['terbaru','terkini','fresh','baru','terupdate','paling baru'],
@@ -1080,6 +1368,7 @@ const _SINONIM = {
   'tersedia':    ['tersedia','ada','hadir','bisa diakses','siap ditonton','dapat dinikmati'],
   'populer':     ['populer','favorit','digemari','viral','trending','banyak ditonton'],
   'cepat':       ['cepat','kilat','instan','tanpa delay','langsung','responsif'],
+
   'akses':       ['akses','buka','kunjungi','masuk','jelajahi','temukan'],
   'tonton':      ['putar', 'mainkan', 'saksikan', 'nikmati', 'simak'],
   'film':        ['film','video','tayangan','tontonan','siaran','content'],
@@ -1105,6 +1394,7 @@ const _SINONIM = {
 function rewriteDesc(text, seed, sinonimOverride=null) {
   if (!text) return text;
   const entries = Object.entries(sinonimOverride || _SINONIM);
+  // Pass 1: ganti setiap kata dengan token unik untuk cegah double-substitution
   const tokens = new Map();
   let out = text;
   let si = seed;
@@ -1118,6 +1408,7 @@ function rewriteDesc(text, seed, sinonimOverride=null) {
     tokens.set(token, replacement);
     out = out.replace(new RegExp('\\b' + word + '\\b', 'gi'), token);
   }
+  // Pass 2: ganti semua token dengan kata tujuan
   for (const [token, replacement] of tokens) {
     out = out.split(token).join(replacement);
   }
@@ -1129,6 +1420,7 @@ const _siteDNACache = new LRUMap(20);
 class SiteDNA {
   constructor(domain) {
     this.domain = domain;
+
     this.s       = hashSeed(domain);
     this.sCopy   = hashSeed(domain + ':copy');
     this.sLayout = hashSeed(domain + ':layout');
@@ -1140,6 +1432,7 @@ class SiteDNA {
   }
 
   _build() {
+
     const verbs      = ['Nonton','Tonton','Streaming','Saksikan','Putar','Nikmati'];
     const verbsCari  = ['Cari','Temukan','Jelajahi','Cek','Eksplorasi'];
     const verbsLihat = ['Lihat','Buka','Akses','Browse','Kunjungi'];
@@ -1273,6 +1566,7 @@ class SiteDNA {
     this.albumTpls = seededShuffle(albumTpls, this.sTitle + 1);
 
     const prefixes = [
+
       `${this.verbNonton} {t} secara gratis tanpa registrasi.`,
       `{t} hadir dengan kualitas terbaik untuk Anda.`,
       `Temukan {t} di koleksi terlengkap kami.`,
@@ -1283,6 +1577,7 @@ class SiteDNA {
       `Dapatkan akses penuh ke {t} secara gratis sekarang.`,
       `Kami hadirkan {t} dengan streaming paling lancar.`,
       `{t} adalah pilihan hiburan terbaik hari ini.`,
+
       `Ingin ${this.verbNonton.toLowerCase()} {t}? Tersedia gratis di sini.`,
       `{t} kini dapat dinikmati tanpa perlu mendaftar.`,
       `Akses {t} langsung — tanpa iklan, tanpa buffering.`,
@@ -1305,6 +1600,7 @@ class SiteDNA {
       'Konten diperbarui otomatis setiap hari.',
       'Gratis selamanya, nikmati tanpa khawatir.',
       `${this.verbNonton} sekarang, tidak perlu tunggu.`,
+
       `Lebih dari ${['1.000','5.000','10.000'][(this.sDesc+1)%3]} konten siap ditonton.`,
       'Tidak perlu akun, langsung akses kapan saja.',
       `Kompatibel di ${['semua perangkat','HP dan laptop','Android & iOS'][(this.sDesc+2)%3]}.`,
@@ -1358,12 +1654,14 @@ class SiteDNA {
     const c = (n) => clsHash(d, n);
     const i = (n) => idHash(d, n);
     this.cls = {
+
       header:          c('header'),
       headerCont:      c('header-container'),
       footer:          c('footer'),
       footerGrid:      c('footer-grid'),
       footerCol:       c('footer-col'),
       footerCopy:      c('footer-copy'),
+
       categories:      c('categories'),
       catInner:        c('categories-inner'),
       cat:             c('cat'),
@@ -1372,24 +1670,29 @@ class SiteDNA {
       bnItem:          c('bn-item'),
       bnIconWrap:      c('bn-icon-wrap'),
       bnDot:           c('dot'),
+
       modalOverlay:    c('modal-overlay'),
       modalInner:      c('modal-inner'),
       modalHead:       c('modal-head'),
       modalClose:      c('modal-close'),
       modalNav:        c('modal-nav'),
+
       logo:            c('logo'),
       searchBar:       c('search-bar'),
       menuBtn:         c('menu-btn'),
+
       container:       c('container'),
       layoutMain:      c('layout-main'),
       contentGrid:     c('content-grid'),
       contentArea:     c('content-area'),
       vGrid:           c('v-grid'),
+
       vCard:           c('v-card'),
       vImg:            c('v-img'),
       vInfo:           c('v-info'),
       vTitle:          c('v-title'),
       vMeta:           c('v-meta'),
+
       trendingStrip:   c('trending-strip'),
       trendingInner:   c('trending-inner'),
       tCard:           c('t-card'),
@@ -1398,9 +1701,11 @@ class SiteDNA {
       tTitle:          c('t-title'),
       tNum:            c('t-num'),
       tDur:            c('t-dur'),
+
       badgeHot:        c('badge-hot'),
       badgeQual:       c('badge-qual'),
       badgeDur:        c('badge-dur'),
+
       breadcrumb:      c('breadcrumb'),
       bcSep:           c('bc-sep'),
       tag:             c('tag'),
@@ -1562,6 +1867,7 @@ class SeoHelper {
     ], this.domainSeed);
 
     this.descTemplates = seededShuffle([
+
       `{title} tersedia gratis di ${n}. Streaming langsung tanpa registrasi.`,
       `Tonton {title} kualitas HD di ${n}. Gratis, cepat, tanpa buffering.`,
       `${n} menghadirkan {title}. Akses unlimited, 100% gratis.`,
@@ -1572,11 +1878,13 @@ class SeoHelper {
       `{title} — tersedia di ${n}. Kualitas HD, gratis selamanya.`,
       `${n} hadirkan {title} untuk Anda. Tonton kapan saja, di mana saja.`,
       `Ingin tonton {title}? ${n} menyediakan gratis tanpa daftar.`,
+
       `{title} sudah ditonton {views}di ${n}. Bergabung dan nikmati gratis.`,
       `${n}: tempat terbaik ${['nonton','tonton','streaming'][(s+1)%3]} {title}. Gratis & HD.`,
       `{title} kini bisa disaksikan di ${n}. Update harian, kualitas terjamin.`,
       `Akses {title} di ${n} — tanpa iklan, tanpa buffering, tanpa biaya.`,
       `${n} mengupdate {title} setiap hari. ${['Tonton','Nikmati','Saksikan'][(s+2)%3]} sekarang.`,
+
       `Gratis dan tanpa daftar — ${['nonton','tonton','akses'][(s+3)%3]} {title} di ${n} sekarang.`,
       `{title} resolusi ${['HD','Full HD','4K'][(s+4)%3]} tersedia gratis di ${n}.`,
       `Ribuan penonton sudah ${['menikmati','menonton','menyaksikan'][(s+5)%3]} {title} di ${n}.`,
@@ -1666,10 +1974,12 @@ ${(() => {
   const lang = this.cfg.SEO_LANG || 'id';
   const regions = this.cfg.SEO_HREFLANG_REGIONS || '';
   const lines = [`<link rel="alternate" hreflang="${h(lang)}" href="${h(canonical)}">`];
+  // Parse regions: "ms:situs.my,en:situs.sg"
   if (regions) {
     regions.split(',').map(r => r.trim()).filter(r => r.includes(':')).forEach(r => {
       const [rlang, rdomain] = r.split(':').map(s => s.trim());
       if (rlang && rdomain) {
+        // Ganti domain di canonical URL dengan domain region
         try {
           const u = new URL(canonical);
           u.hostname = rdomain;
@@ -1705,7 +2015,7 @@ ${(() => {
     const fp=this.generateUniqueSchema(item.id||0, item.type);
     const type=item.type||'video';
     const baseId='https://'+this.domain+'/#'+type+'-'+(item.id||0);
-    const pub={ '@type':'Organization','@id':'https://'+this.domain+'/#organization', 'name':this.siteName, 'url':'https://'+this.domain, 'logo':{'@type':'ImageObject','url':'https://'+this.domain+'/assets/og-default.jpg','width':1200,'height':630} };
+    const pub={ '@type':'Organization', '@id':'https://'+this.domain+'/#organization', 'name':this.siteName, 'url':'https://'+this.domain, 'logo':{'@type':'ImageObject','url':'https://'+this.domain+'/assets/og-default.jpg','width':1200,'height':630} };
     const base={
       '@type':fp.schema_type,'@id':baseId,'name':item.title||'',
       'description':truncate(item.description||item.title||'',300),
@@ -1781,9 +2091,22 @@ ${(() => {
 
   faqSchema(faqs) {
     if (!faqs?.length) return '';
-    const schema={ '@context':'https://schema.org','@type':'FAQPage','mainEntity':faqs.map(faq=>({'@type':'Question','name':faq.q,'acceptedAnswer':{'@type':'Answer','text':faq.a})) };
+    const schema={ '@context':'https://schema.org','@type':'FAQPage','mainEntity':faqs.map(faq=>({'@type':'Question','name':faq.q,'acceptedAnswer':{'@type':'Answer','text':faq.a}})) };
     return `<script type="application/ld+json" nonce="${generateNonce()}">${JSON.stringify(schema,null,0)}</script>`;
   }
+}
+
+function generateJuicyAdsCode(zoneId, width, height, adzone = '1001162') {
+  if (!zoneId) return '';
+  
+  // Generate unique ID for the ins element
+  const insId = Math.floor(Math.random() * 1000000) + 900000;
+  
+  return `<script type="text/javascript" data-cfasync="false" async src="https://poweredby.jads.co/js/jads.js"></script>
+<ins id="${insId}" data-width="${width}" data-height="${height}"></ins>
+<script type="text/javascript" data-cfasync="false" async>
+  (adsbyjuicy = window.adsbyjuicy || []).push({'adzone': ${adzone}});
+</script>`;
 }
 
 function sanitizeAdCode(code) {
@@ -1796,29 +2119,46 @@ function sanitizeAdCode(code) {
 
 function getAdsSlots(cfg) {
   const ck = cfg.WARUNG_DOMAIN+':'+cfg.ADS_ADSENSE_CLIENT+':'
-    +(cfg.ADS_CODE_TOP_D||'').slice(0,32)+':'+(cfg.ADS_CODE_TOP_M||'').slice(0,32)+':'
-    +(cfg.ADS_CODE_CNT_D||'').slice(0,32)+':'+(cfg.ADS_CODE_CNT_M||'').slice(0,32)+':'
-    +(cfg.ADS_CODE_SDB_D||'').slice(0,32)+':'+(cfg.ADS_CODE_SDB_M||'').slice(0,32)+':'
-    +(cfg.ADS_CODE_POPUNDER||'').slice(0,32)+':'+cfg.ADS_MID_GRID_AFTER;
+    + (cfg.JUICYADS_ZONE_TOP_D || '') + ':' + (cfg.JUICYADS_ZONE_TOP_M || '') + ':'
+    + (cfg.JUICYADS_ZONE_BTM_D || '') + ':' + (cfg.JUICYADS_ZONE_BTM_M || '') + ':'
+    + (cfg.JUICYADS_ZONE_SDB_D || '') + ':' + (cfg.JUICYADS_ZONE_SDB_M || '') + ':'
+    + (cfg.JUICYADS_ZONE_POPUNDER || '') + ':' + cfg.ADS_MID_GRID_AFTER;
+  
   if (_adsSlotsCache.has(ck)) return _adsSlotsCache.get(ck);
 
-  const tD = cfg.ADS_CODE_TOP_D, tM = cfg.ADS_CODE_TOP_M;
-  const cD = cfg.ADS_CODE_CNT_D, cM = cfg.ADS_CODE_CNT_M;
-  const sD = cfg.ADS_CODE_SDB_D, sM = cfg.ADS_CODE_SDB_M;
+  const width = cfg.JUICYADS_WIDTH || '728';
+  const height = cfg.JUICYADS_HEIGHT || '90';
+  const adzone = cfg.JUICYADS_ADZONE || '1001162';
+  
+  // Generate JuicyAds codes from zone IDs
+  const tD = cfg.JUICYADS_ZONE_TOP_D ? generateJuicyAdsCode(cfg.JUICYADS_ZONE_TOP_D, width, height, adzone) : '';
+  const tM = cfg.JUICYADS_ZONE_TOP_M ? generateJuicyAdsCode(cfg.JUICYADS_ZONE_TOP_M, width, height, adzone) : '';
+  const bD = cfg.JUICYADS_ZONE_BTM_D ? generateJuicyAdsCode(cfg.JUICYADS_ZONE_BTM_D, width, height, adzone) : '';
+  const bM = cfg.JUICYADS_ZONE_BTM_M ? generateJuicyAdsCode(cfg.JUICYADS_ZONE_BTM_M, width, height, adzone) : '';
+  const sD = cfg.JUICYADS_ZONE_SDB_D ? generateJuicyAdsCode(cfg.JUICYADS_ZONE_SDB_D, width, height, adzone) : '';
+  const sM = cfg.JUICYADS_ZONE_SDB_M ? generateJuicyAdsCode(cfg.JUICYADS_ZONE_SDB_M, width, height, adzone) : '';
+  const pU = cfg.JUICYADS_ZONE_POPUNDER ? generateJuicyAdsCode(cfg.JUICYADS_ZONE_POPUNDER, '0', '0', adzone) : '';
 
-  const pU = cfg.ADS_CODE_POPUNDER || cM || cD;
+  // Fallback to legacy ADS_CODE if JuicyAds zones are empty
+  const topD = tD || cfg.ADS_CODE_TOP_D;
+  const topM = tM || cfg.ADS_CODE_TOP_M;
+  const cntD = bD || cfg.ADS_CODE_CNT_D;
+  const cntM = bM || cfg.ADS_CODE_CNT_M;
+  const sdbD = sD || cfg.ADS_CODE_SDB_D;
+  const sdbM = sM || cfg.ADS_CODE_SDB_M;
+  const popunder = pU || cfg.ADS_CODE_POPUNDER || cntM || cntD;
 
   const slots = {
-    header_top:      { enabled:true,  type:'html',     code_desktop:tD, code_mobile:tM, label:true,        align:'center', margin:'0 0 4px' },
-    before_grid:     { enabled:true,  type:'html',     code_desktop:cD, code_mobile:cM, label:'',          align:'center', margin:'8px 0 16px' },
-    mid_grid:        { enabled:true,  type:'html',     code_desktop:cD, code_mobile:cM, label:'',          align:'center', margin:'4px 0', insert_after:safeParseInt(cfg.ADS_MID_GRID_AFTER,6) },
-    after_grid:      { enabled:true,  type:'html',     code_desktop:cD, code_mobile:cM, label:true,        align:'center', margin:'16px 0 8px' },
-    sidebar_top:     { enabled:true,  type:'html',     code_desktop:sD, code_mobile:sM, label:true,        align:'center', margin:'0 0 16px' },
-    sidebar_mid:     { enabled:true,  type:'html',     code_desktop:sD, code_mobile:sM, label:true,        align:'center', margin:'0 0 16px' },
-    sidebar_bottom:  { enabled:true,  type:'html',     code_desktop:sD, code_mobile:sM, label:true,        align:'center', margin:'0' },
-    after_content:   { enabled:true,  type:'html',     code_desktop:cD, code_mobile:cM,  label:false,      align:'center', margin:'24px 0' },
+    header_top:      { enabled:true,  type:'html',     code_desktop:topD, code_mobile:topM, label:true,        align:'center', margin:'0 0 4px' },
+    before_grid:     { enabled:true,  type:'html',     code_desktop:cntD, code_mobile:cntM, label:'',          align:'center', margin:'8px 0 16px' },
+    mid_grid:        { enabled:true,  type:'html',     code_desktop:cntD, code_mobile:cntM, label:'',          align:'center', margin:'4px 0', insert_after:safeParseInt(cfg.ADS_MID_GRID_AFTER,6) },
+    after_grid:      { enabled:true,  type:'html',     code_desktop:cntD, code_mobile:cntM, label:true,        align:'center', margin:'16px 0 8px' },
+    sidebar_top:     { enabled:true,  type:'html',     code_desktop:sdbD, code_mobile:sdbM, label:true,        align:'center', margin:'0 0 16px' },
+    sidebar_mid:     { enabled:true,  type:'html',     code_desktop:sdbD, code_mobile:sdbM, label:true,        align:'center', margin:'0 0 16px' },
+    sidebar_bottom:  { enabled:true,  type:'html',     code_desktop:sdbD, code_mobile:sdbM, label:true,        align:'center', margin:'0' },
+    after_content:   { enabled:true,  type:'html',     code_desktop:cntD, code_mobile:cntM,  label:false,      align:'center', margin:'24px 0' },
     footer_top:      { enabled:true,  type:'html',     code_desktop:'', code_mobile:'',  label:false,      align:'center', margin:'0' },
-    footer_popunder: { enabled:true,  type:'popunder', code_desktop:pU, code_mobile:pU,  label:false,      align:'center', margin:'0' },
+    footer_popunder: { enabled:true,  type:'popunder', code_desktop:popunder, code_mobile:popunder,  label:false,      align:'center', margin:'0' },
   };
   _adsSlotsCache.set(ck, slots);
   return slots;
@@ -1850,11 +2190,13 @@ function renderBanner(name, cfg, request=null, nonce='') {
     });
   };
   if (slot.type==='popunder') {
+
     const code = injectNonce(slot.code_mobile || slot.code_desktop || '');
     if (!code) return '';
     return `<div class="ad-slot ad-slot--footer_popunder" aria-hidden="true">${code}</div>`;
   }
   if (slot.type==='html' && (slot.code_desktop || slot.code_mobile)) {
+    // Fallback: kalau salah satu kosong, gunakan yang tersedia untuk keduanya
     const codeD = slot.code_desktop || slot.code_mobile;
     const codeM = slot.code_mobile  || slot.code_desktop;
     if (request) {
@@ -1880,19 +2222,25 @@ function renderBannerMidGrid(index, cfg, request=null, nonce='') {
 
 function bannerStyles() {
   return `<style>
+
 .ad-slot{overflow:hidden;width:100%;max-width:100%;box-sizing:border-box;min-height:1px;display:block}
+
 .ads-desktop{display:block!important}.ads-mobile{display:none!important}
 @media(max-width:767px){
   .ads-desktop{display:none!important}
   .ads-mobile{display:block!important}
 }
+
 .ad-slot--header_top{min-height:90px;contain:layout style}
 .ad-slot--before_grid,.ad-slot--after_grid{min-height:100px;contain:layout style}
 .ad-slot--mid_grid{min-height:100px;contain:layout style}
 .ad-slot--sidebar_top,.ad-slot--sidebar_mid{min-height:250px;contain:layout style}
 .ad-slot--footer_top{min-height:90px;contain:layout style}
+
 .content-grid>li>.ad-slot--mid_grid,.content-grid>.ad-slot--mid_grid{grid-column:1/-1;width:100%}
+
 @media(max-width:767px){
+  /* Reset min-height di mobile — biar tidak bolong kalau iklan gagal/belum load */
   .ad-slot--header_top,
   .ad-slot--before_grid,.ad-slot--after_grid,
   .ad-slot--mid_grid,
@@ -1900,7 +2248,9 @@ function bannerStyles() {
     min-height:0!important;
     contain:none;
   }
+  /* Sembunyikan slot yang benar-benar kosong (tidak ada child yang dirender) */
   .ad-slot:empty{display:none!important;margin:0!important}
+
   .ad-slot ins{
     display:block!important;
     width:100%!important;
@@ -1921,13 +2271,17 @@ function bannerStyles() {
     display:block;
     margin:0 auto;
   }
+
   .ad-slot--before_grid,.ad-slot--mid_grid,.ad-slot--after_grid,.ad-slot--footer_top{
     text-align:center;
   }
+
 }
+
 @media(min-width:768px){
   .ad-slot ins,.ad-slot iframe,.ad-slot img{max-width:100%!important;width:auto!important}
 }
+
 .ad-slot--footer_popunder{
   position:absolute;
   width:0;height:0;
@@ -1944,6 +2298,7 @@ function adsenseScript(cfg) {
 }
 
 function getUniqueTheme(cfg, dna) {
+
   if (!dna) dna = SiteDNA.get(cfg.WARUNG_DOMAIN);
   const a    = cfg.THEME_ACCENT    || '#ffaa00';
   const a2   = cfg.THEME_ACCENT2   || '#ffc233';
@@ -2429,31 +2784,24 @@ function renderHead({ title, desc, canonical, ogImage, ogType, keywords, noindex
     'isPartOf':{'@type':'WebSite','name':cfg.WARUNG_NAME,'url':'https://'+cfg.WARUNG_DOMAIN},
   },null,0);
 
+  // ── Ekstrak domain iklan — cached per kombinasi kode iklan ─────────────────
   const dapurDomain = (cfg._env?.DAPUR_BASE_URL||'https://dapur.dukunseo.com').replace(/https?:\/\//,'').split('/')[0];
-  const _adsCspKey = [cfg.ADS_CODE_TOP_D,cfg.ADS_CODE_TOP_M,cfg.ADS_CODE_CNT_D,cfg.ADS_CODE_CNT_M,cfg.ADS_CODE_SDB_D,cfg.ADS_CODE_SDB_M,cfg.ADS_CODE_POPUNDER].map(c=>(c||'').slice(0,16)).join('|');
+  
+  // Build CSP key from JuicyAds zones
+  const _adsCspKey = [
+    cfg.JUICYADS_ZONE_TOP_D, cfg.JUICYADS_ZONE_TOP_M,
+    cfg.JUICYADS_ZONE_BTM_D, cfg.JUICYADS_ZONE_BTM_M,
+    cfg.JUICYADS_ZONE_SDB_D, cfg.JUICYADS_ZONE_SDB_M,
+    cfg.JUICYADS_ZONE_POPUNDER
+  ].map(c=>(c||'').slice(0,16)).join('|');
+  
   let _adsCspResult = _adsCspCache.get(_adsCspKey);
   if (!_adsCspResult) {
-    const preconnDomains = new Set(['fonts.googleapis.com','fonts.gstatic.com','cdnjs.cloudflare.com']);
-    const scriptDomains  = new Set(['cdnjs.cloudflare.com','fonts.googleapis.com','pagead2.googlesyndication.com','googleads.g.doubleclick.net']);
-    const frameDomains   = new Set([dapurDomain, cfg.WARUNG_DOMAIN,'googleads.g.doubleclick.net']);
-    const connectDomains = new Set([cfg.WARUNG_DOMAIN, dapurDomain,'pagead2.googlesyndication.com','googleads.g.doubleclick.net']);
-    const allAdCodes = [cfg.ADS_CODE_TOP_D,cfg.ADS_CODE_TOP_M,cfg.ADS_CODE_CNT_D,cfg.ADS_CODE_CNT_M,cfg.ADS_CODE_SDB_D,cfg.ADS_CODE_SDB_M,cfg.ADS_CODE_POPUNDER].filter(Boolean);
-    const srcRx = /(?:src|href)=["']https?:\/\/([^/"'?\s]+)/gi;
-    const ifrRx = /<iframe[^>]+src=["']https?:\/\/([^/"'?\s]+)/gi;
-    for (const code of allAdCodes) {
-      for (const rx of [srcRx, ifrRx]) {
-        rx.lastIndex = 0;
-        let m;
-        while ((m = rx.exec(code)) !== null) {
-          const d = m[1];
-          if (!d || d.includes(cfg.WARUNG_DOMAIN)) continue;
-          preconnDomains.add(d);
-          scriptDomains.add(d);
-          if (rx === ifrRx) { frameDomains.add(d); connectDomains.add(d); }
-          else connectDomains.add(d);
-        }
-      }
-    }
+    const preconnDomains = new Set(['fonts.googleapis.com','fonts.gstatic.com','cdnjs.cloudflare.com', 'poweredby.jads.co']);
+    const scriptDomains  = new Set(['cdnjs.cloudflare.com','fonts.googleapis.com','pagead2.googlesyndication.com','googleads.g.doubleclick.net', 'poweredby.jads.co']);
+    const frameDomains   = new Set([dapurDomain, cfg.WARUNG_DOMAIN, 'poweredby.jads.co']);
+    const connectDomains = new Set([cfg.WARUNG_DOMAIN, dapurDomain, 'poweredby.jads.co']);
+
     _adsCspResult = {
       preconnects: [...preconnDomains].map(d=>`<link rel="dns-prefetch" href="https://${d}">\n<link rel="preconnect" href="https://${d}" crossorigin>`).join('\n'),
       script:  [...scriptDomains],
@@ -2513,6 +2861,7 @@ function renderNavHeader({ cfg, currentPage='', q='', isHome=false }) {
 
   const C = dna.cls, I = dna.ids;
   return `<body>
+<!-- MODAL MENU -->
 <div class="${C.modalOverlay}" id="${I.modalMenu}">
   <div class="${C.modalInner}">
     <div class="${C.modalHead}">
@@ -2533,6 +2882,7 @@ function renderNavHeader({ cfg, currentPage='', q='', isHome=false }) {
   </div>
 </div>
 
+<!-- HEADER -->
 <header class="${C.header}">
   <div class="${C.headerCont}">
     <button class="${C.menuBtn}" id="${I.menuBtn}" aria-label="Menu"><i class="fas fa-bars"></i></button>
@@ -2544,6 +2894,7 @@ function renderNavHeader({ cfg, currentPage='', q='', isHome=false }) {
   </div>
 </header>
 
+<!-- CATEGORIES STRIP -->
 <nav class="${C.categories}">
   <div class="${C.catInner}" id="${I.catList}">
     <a class="${C.cat} ${!currentPage || currentPage==='home' || isHome ? 'active' : ''}" href="${homeUrl(cfg)}">${dna.navLabels.semua}</a>
@@ -2573,6 +2924,7 @@ function renderFooter(cfg, request=null, nonce='') {
   const followLabel  = ['Follow','Ikuti','Sosmed','Social'][(dna.sFooter+3) % 4];
 
   return `${renderBanner('footer_top', cfg, request, nonce)}
+<!-- FOOTER -->
 <footer class="${C.footer}">
   <div class="${C.footerGrid}">
     <div class="${C.footerCol}">
@@ -2614,6 +2966,7 @@ function renderFooter(cfg, request=null, nonce='') {
   <p style="text-align:center;font-size:11px;color:#555;margin:8px 0 4px">${h(dna.footerTagline)}</p>
 
   <div class="${C.footerCopy}">${h(dna.copyrightFn(cfg.WARUNG_NAME, year))}</div>
+  <!-- honeytrap: invisible to users, visible to scrapers -->
   <div aria-hidden="true" style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden" tabindex="-1">${
     (() => {
       const hp = (cfg._env?.HONEYPOT_PREFIX || 'trap').replace(/[^a-z0-9\-]/gi,'');
@@ -2626,6 +2979,7 @@ function renderFooter(cfg, request=null, nonce='') {
   }</div>
 </footer>
 
+<!-- BOTTOM NAV -->
 <nav class="${C.bottomNav}">
   <a class="${C.bnItem} active" href="${homeUrl(cfg)}" aria-label="Beranda">
     <div class="${C.bnIconWrap}"><i class="fas fa-home"></i></div>
@@ -2958,6 +3312,7 @@ async function handleProfile(request, cfg, client, seo) {
     ${breadcrumbHtml}
     <div style="max-width:860px;margin:0 auto">
 
+      <!-- Avatar + Info -->
       <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;background:var(--bg-card,#1e222b);border-radius:var(--border-radius,8px);padding:2rem;box-shadow:var(--shadow-sm);margin-bottom:2rem">
         <img src="${h(authorAvatar)}" alt="${h(authorName)}"
           style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid var(--accent,#ffaa00);flex-shrink:0"
@@ -2969,6 +3324,7 @@ async function handleProfile(request, cfg, client, seo) {
         </div>
       </div>
 
+      <!-- Detail Warung -->
       <div style="background:var(--bg-card,#1e222b);border-radius:var(--border-radius,8px);padding:1.5rem 2rem;margin-bottom:2rem;box-shadow:var(--shadow-sm)">
         <h2 style="font-size:1rem;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);margin:0 0 1rem">Tentang ${h(cfg.WARUNG_NAME)}</h2>
         <table style="width:100%;border-collapse:collapse;font-size:.9rem">
@@ -2979,6 +3335,7 @@ async function handleProfile(request, cfg, client, seo) {
         </table>
       </div>
 
+      <!-- Konten Trending -->
       ${trendingHtml}
 
     </div>
@@ -3096,6 +3453,7 @@ async function handleView(request, cfg, client, seo, segments) {
   if (!isSearchBot(_ua) && !isScraperBot(_ua) && client.ctx?.waitUntil) {
     client.ctx.waitUntil(client.recordView(id));
   }
+  // ── IndexNow: ping saat konten pertama kali diakses ──────────────────────
   if (client.ctx?.waitUntil) {
     const hammer0 = IndexingHammer.get(cfg._env || {}, cfg);
     const fullUrl = 'https://' + cfg.WARUNG_DOMAIN + (type==='album' ? albumUrl(id, media.title, cfg) : contentUrl(id, media.title, cfg));
@@ -3112,9 +3470,13 @@ async function handleView(request, cfg, client, seo, segments) {
   const pageUrl=type==='album'?albumUrl(id,media.title,cfg):contentUrl(id,media.title,cfg);
   const canonical=seo.canonical(pageUrl);
 
+  // ── Auto Canonical Cluster — redirect near-duplicate slug ke URL kanonik ──
+  // Contoh: /tonton/123/judul-lama → 301 → /tonton/123/judul-benar
+  // Hemat crawl budget: hanya 1 URL per konten yang diindex Google
   const reqSlug = (segments[2] || '').toLowerCase();
   const canonSlug = makeSlug(media.title || '');
   if (canonSlug && reqSlug !== canonSlug) {
+    // Slug beda (typo, judul lama, tanpa slug) → permanent redirect ke canonical
     return new Response(null, {
       status: 301,
       headers: {
@@ -3139,6 +3501,7 @@ async function handleView(request, cfg, client, seo, segments) {
   if (type==='video') {
     playerHtml=`<div class="player-wrapper"><iframe src="${h(playerUrl)}" allowfullscreen loading="eager" class="player-frame" title="${h(media.title)}" data-id="${id}" width="1280" height="720" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals allow-pointer-lock allow-downloads" referrerpolicy="strict-origin-when-cross-origin" aria-label="Pemutar video: ${h(media.title)}"></iframe></div>`;
   } else if (type==='album') {
+
     function _albumSrcsetUrl(url, w) {
       try { const u = new URL(url); u.searchParams.set('w', String(w)); return u.toString(); }
       catch { return url + (url.includes('?') ? '&' : '?') + 'w=' + w; }
@@ -3147,8 +3510,7 @@ async function handleView(request, cfg, client, seo, segments) {
   }
   const tagsHtml=media.tags?.length?`<div class="content-tags" role="list">${media.tags.map(t=>`<a href="${h(tagUrl(t,cfg))}" class="${dna.cls.tag}" role="listitem">#${h(t)}</a>`).join('')}</div>`:'';
 
-  const popularTags=media.tags?.slice(5,12).map(t=>`<a href="${h(tagUrl(t,cfg))}" class="${dna.cls.tag}">#${h(t)}</a>`).join('')||'';
-  let descHtml='';
+  const popularTags=media.tags?.slice(5,12).map(t=>`<a href="${h(tagUrl(t,cfg))}" class="${dna.cls.tag}">#${h(t)}</a>`).join('')||'';  let descHtml='';
   if (media.description&&type!=='story') {
     const short=mbSubstr(stripTags(media.description),0,300);
     descHtml=`<div class="content-desc"><p>${h(short)}</p>${media.description.length>300?`<button type="button" class="read-more js-toggle-desc" aria-expanded="false" aria-controls="full-desc-${id}">Baca selengkapnya</button><div id="full-desc-${id}" class="full-desc hidden">${nl2br(h(media.description))}</div>`:''}</div>`;
@@ -3193,7 +3555,7 @@ ${tagsHtml}${descHtml}${alchemistHtml}${seoArticle}
 </div></div>`;
   const relatedHtml=related.length?`<ol class="related-list">${related.map(rel=>`<li><a href="${h(itemUrl(rel,cfg))}" class="related-item"><img src="${h(safeThumb(rel,cfg))}" alt="${h(mbSubstr(rel.title,0,60))}" loading="lazy" width="80" height="45" onerror="this.src='${h(cfg.DEFAULT_THUMB)}'"><div class="related-info"><p class="related-title">${h(mbSubstr(rel.title,0,50))}</p><small class="related-meta"><span class="badge-small"><i class="fas ${TYPE_ICONS[rel.type]||'fa-file'}"></i> ${h(rel.type||'video')}</span><span><i class="fas fa-eye"></i> ${formatViews(rel.views||0)}</span></small></div></a></li>`).join('')}</ol>`:`<p class="empty-state">Tidak ada konten terkait.</p>`;
   const lightboxHtml=type==='album'?`<div id="lightbox" class="lightbox hidden" role="dialog" aria-modal="true"><div class="lightbox-content"><img id="lightbox-img" src="" alt="" class="lightbox-image"><button type="button" id="lightboxClose" class="lightbox-close" aria-label="Tutup"><i class="fas fa-times"></i></button><div class="lightbox-nav"><button type="button" id="lightboxPrev" class="lightbox-prev" aria-label="Sebelumnya"><i class="fas fa-chevron-left"></i></button><button type="button" id="lightboxNext" class="lightbox-next" aria-label="Berikutnya"><i class="fas fa-chevron-right"></i></button></div><div class="lightbox-caption" id="lightbox-caption"></div></div></div>
-<script nonce="${adNonce}">var _lb={idx:0,photos:${JSON.stringify(albumPhotos.map(p=>p.url))},titles:${JSON.stringify(albumPhotos.map(()=>media.title))}};function openLightbox(src,i,t){_lb.idx=i;var img=document.getElementById('lightbox-img'),cap=document.getElementById('lightbox-caption'),lb=document.getElementById('lightbox');img.src=src;img.alt=t+' - Foto '+(i+1);cap.textContent=t+' ('+(i+1)+' / '+_lb.photos.length+')';lb.classList.remove('hidden');document.body.style.overflow='hidden';lb.querySelector('.lightbox-close').focus();}function closeLightbox(e){if(!e||e.target===e.currentTarget||e.target.closest('.lightbox-close')){var lb=document.getElementById('lightbox');lb.classList.add('hidden');document.body.style.overflow='';}}function navigateLightbox(d){var n=(_lb.idx+d+_lb.photos.length)%_lb.photos.length;_lb.idx=n;var img=document.getElementById('lightbox-img'),cap=document.getElementById('lightbox-caption');img.src=_lb.photos[n];cap.textContent=_lb.titles[n]+' ('+(n+1)+' / '+_lb.photos.length+')';}(function(){var lb=document.getElementById('lightbox'),lc=document.getElementById('lightboxClose'),lp=document.getElementById('lightboxPrev'),ln=document.getElementById('lightboxNext');if(lb)lb.addEventListener('click',function(e){if(e.target===lb)closeLightbox(e);});if(lc)lc.addEventListener('click',closeLightbox);if(lp)lp.addEventListener('click',function(){navigateLightbox(-1);});if(ln)ln.addEventListener('click',function(){navigateLightbox(1);});document.querySelectorAll('.js-lightbox-open').forEach(function(btn){btn.addEventListener('click',function(){openLightbox(btn.dataset.src,parseInt(btn.dataset.idx),btn.dataset.title);});});})();document.addEventListener('keydown',function(e){var lb=document.getElementById('lightbox');if(lb&&!lb.classList.contains('hidden')){if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft')navigateLightbox(-1);if(e.key==='ArrowRight')navigateLightbox(1);}});<\/script>`:'';
+<script nonce="${adNonce}">var _lb={idx:0,photos:${JSON.stringify(albumPhotos.map(p=>p.url))},titles:${JSON.stringify(albumPhotos.map(()=>media.title))}};function openLightbox(src,i,t){_lb.idx=i;var img=document.getElementById('lightbox-img'),cap=document.getElementById('lightbox-caption'),lb=document.getElementById('lightbox');img.src=src;img.alt=t+' - Foto '+(i+1);cap.textContent=t+' ('+(i+1)+' / '+_lb.photos.length+')';lb.classList.remove('hidden');document.body.style.overflow='hidden';lb.querySelector('.lightbox-close').focus();}function closeLightbox(e){if(!e||e.target===e.currentTarget||e.target.closest('.lightbox-close')){var lb=document.getElementById('lightbox');lb.classList.add('hidden');document.body.style.overflow='';}}function navigateLightbox(d){var n=(_lb.idx+d+_lb.photos.length)%_lb.photos.length;_lb.idx=n;var img=document.getElementById('lightbox-img'),cap=document.getElementById('lightbox-caption');img.src=_lb.photos[n];cap.textContent=_lb.titles[n]+' ('+(n+1)+' / '+_lb.photos.length+')';}(function(){var lb=document.getElementById('lightbox'),lc=document.getElementById('lightboxClose'),lp=document.getElementById('lightboxPrev'),ln=document.getElementById('lightboxNext');if(lb)lb.addEventListener('click',function(e){if(e.target===lb)closeLightbox(e);});if(lc)lc.addEventListener('click',closeLightbox);if(lp)lp.addEventListener('click',function(){navigateLightbox(-1);});if(ln)ln.addEventListener('click',function(){navigateLightbox(1);});document.querySelectorAll('.js-lightbox-open').forEach(function(btn){btn.addEventListener('click',function(){openLightbox(btn.dataset.src,parseInt(btn.dataset.idx),btn.dataset.title);});});})();document.addEventListener('keydown',function(e){var lb=document.getElementById('lightbox');if(lb&&!lb.classList.contains('hidden')){if(e.key==='Escape')closeLightbox();if(e.key==='ArrowLeft')navigateLightbox(-1);if(e.key==='ArrowRight')navigateLightbox(1);}});<\/script>`:'';;
   const pageScript=`<script nonce="${adNonce}">function copyLink(btn){var url=btn.dataset.url||location.href;if(navigator.clipboard){navigator.clipboard.writeText(url).then(()=>showToast('Link disalin!')).catch(()=>fallbackCopy(url));}else fallbackCopy(url);}function fallbackCopy(text){var ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;top:-999px';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');showToast('Link disalin!');}catch{prompt('Salin link:',text);}document.body.removeChild(ta);}function showToast(msg){var ex=document.querySelector('.toast');ex&&ex.remove();var t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.parentNode&&t.remove(),2200);}function shareContent(){if(navigator.share){navigator.share({title:${JSON.stringify(media.title)},url:location.href}).catch(()=>{});}else copyLink({dataset:{url:location.href}});}function toggleDesc(btn){var id=btn.getAttribute('aria-controls'),fd=document.getElementById(id);if(!fd)return;var open=btn.getAttribute('aria-expanded')==='true';fd.classList.toggle('hidden',open);fd.setAttribute('aria-hidden',String(open));btn.setAttribute('aria-expanded',String(!open));btn.textContent=open?'Baca selengkapnya':'Tutup';}
 
 (function(){var cp=document.getElementById('btnCopyLink'),sh=document.getElementById('btnShare');if(cp)cp.addEventListener('click',function(){copyLink(this);});if(sh)sh.addEventListener('click',shareContent);document.querySelectorAll('.js-toggle-desc').forEach(function(b){b.addEventListener('click',function(){toggleDesc(this);});});})();<\/script>`;
@@ -3243,6 +3605,7 @@ async function handleDownload(request, cfg, client, seo, segments) {
   let bodyHtml = '';
 
   if (type === 'video') {
+
     const [dlUrl, playerUrl] = await Promise.all([
       client.getDownloadUrl(id),
       client.getPlayerUrl(id),
@@ -3327,6 +3690,7 @@ async function handleDownload(request, cfg, client, seo, segments) {
       </div>
       <p style="text-align:center;margin-top:16px"><a href="${h(canonical)}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Kembali ke Album</a></p>`;
   } else {
+
     bodyHtml = `<div class="download-error" style="text-align:center;padding:40px 20px">
       <i class="fas fa-exclamation-triangle" style="font-size:2rem;color:var(--gold);display:block;margin-bottom:12px"></i>
       <p>Tipe konten ini tidak mendukung fitur download.</p>
@@ -3481,9 +3845,9 @@ async function handleTag(request, cfg, client, seo, segments) {
   const tagRaw=decodeURIComponent(segments[1]||'');
   const tag=mbSubstr(
     (tagRaw).trim()
-      .replace(/<[^>]+>/g,'')
-      .replace(/[<>"'`]/g,'')
-      .replace(/on\w+\s*=/gi,''),
+      .replace(/<[^>]+>/g,'')      // strip HTML tags
+      .replace(/[<>"'`]/g,'')      // strip dangerous quote/bracket chars
+      .replace(/on\w+\s*=/gi,''),  // strip event handler attributes (onclick= etc)
   0, 80);
   if (!tag) return handleTagIndex(request, cfg, client, seo);
   const url=new URL(request.url);
@@ -3640,7 +4004,9 @@ async function handleSitemap(request, cfg, client, env, honeyPrefix, cannibal=nu
         const lastmod=(item.updated_at||item.created_at||'').slice(0,10);
         const ageDays=(Date.now()-new Date(item.created_at||0).getTime())/86400000;
         const priority=ageDays<7?'0.9':ageDays<30?'0.8':ageDays<90?'0.7':'0.6';
+        // Image sitemap
         const imgXml=item.thumbnail?`\n    <image:image><image:loc>${h(item.thumbnail)}</image:loc><image:title>${h(item.title)}</image:title></image:image>`:'';
+        // Video sitemap — hanya untuk tipe video
         let videoXml='';
         if (item.type==='video' && item.thumbnail) {
           const dur = item.duration ? `\n      <video:duration>${parseInt(item.duration,10)}</video:duration>` : '';
@@ -3723,26 +4089,35 @@ export async function onRequest(context) {
   const isHandled   = _HANDLED_PATHS.has(reqBasename);
   if (!isHandled && _STATIC_EXT_RX.test(reqPathRaw)) return next();
 
+  // D1 binding — null jika tidak dikonfigurasi, semua fitur D1 graceful degrade
   const db = env.DB || null;
 
+  // cfg di-hoist ke atas — getConfig sudah cached via _cfgCacheMap, O(1) setelah hit pertama
   const cfg  = getConfig(env, request);
 
+  // ── 103 Early Hints — dinonaktifkan (tidak didukung Cloudflare Pages) ──────
+
+  // ── D1 Blacklist: cek SEBELUM apapun ─────────────────────────────────────
+  // Block bot lama yang sudah masuk honeypot — hemat semua proses berikutnya
   const ip = request.headers.get('CF-Connecting-IP')||'0.0.0.0';
   const ua = request.headers.get('User-Agent')||'';
   if (db && !isSearchBot(ua)) {
+    // Memory cache check dulu (0ms) sebelum D1
     if (!isBlacklisted(ip)) {
       try {
         const blocked = await db.prepare(
           'SELECT 1 FROM blocked_ips WHERE ip = ? LIMIT 1'
         ).bind(ip).first();
         if (blocked) {
+          // Sync ke memory agar request berikutnya tidak perlu D1
           _blCache.set(ip, { blocked: true, ts: Date.now() });
           return new Response(null, { status: 200 });
         }
-      } catch(e) {  }
+      } catch(e) { /* D1 error tidak boleh block request */ }
     }
   }
 
+  // ── D1 Cleanup berkala — 1x per ~1000 request, async tidak block ─────────
   if (db && Math.random() < 0.001) {
     waitUntil(
       db.prepare('DELETE FROM api_cache WHERE expires_at < ?')
@@ -3773,9 +4148,11 @@ export async function onRequest(context) {
   const getVisitorType = () => { if (!_visitorTypeCache) _visitorTypeCache = classifyVisitor(request); return _visitorTypeCache; };
 
   if (!isSearchBotUA) {
+
     if (isBlacklisted(ip)) return new Response(null,{status:200});
 
     if (!isPublicFeed) {
+
       const visitorType=getVisitorType();
 
       if (visitorType==='scraper'||visitorType==='headless') {
@@ -3829,6 +4206,7 @@ export async function onRequest(context) {
     const rcKey = cfg.WARUNG_DOMAIN + ':' + (dapurConfig.warung_type||'') + ':' + (dapurConfig.features ? JSON.stringify(dapurConfig.features) : '') + ':' + (dapurConfig.nav_items ? JSON.stringify(dapurConfig.nav_items) : '') + ':' + (dapurConfig.content_types ? JSON.stringify(dapurConfig.content_types) : '');
     reqCfg = _reqCfgCache.get(rcKey);
     if (!reqCfg) {
+      // Base: env vars
       reqCfg = Object.assign(Object.create(null), cfg, {
         _dapurConfig: dapurConfig,
         WARUNG_TYPE: dapurConfig.warung_type || cfg.WARUNG_TYPE,
@@ -3896,6 +4274,7 @@ export async function onRequest(context) {
       const rk='robots:'+domain+':'+honeyPrefix;
       let robotsBody = _robotsCache.get(rk);
       if (!robotsBody) {
+        // robots.txt Santet v2 — berjenjang per kelas bot
         const lines = [
           '# robots.txt — '+domain,
           '# Generated by Warung Pujasera Pesugihan / dukunseo.com',
@@ -4067,12 +4446,15 @@ const _INDEXNOW_ENDPOINTS = [
 ];
 
 const _DEFAULT_CANNIBALIZE_KW = [
+
   'cantik','cewek','tante','imut',
   'indo','viral','terbaru','bacol',
   'hijab','jilbab','asupan',
   'lokal','pinay','malay',
+
   'konten terbaru','asupan viral','situs viral indo',
   'live omek','cewek cantik sange',
+
   'nonton xxx gratis','video indo terbaru','konten indo viral',
   'film semi gratis','bioskop dewasa online','streaming film hd',
   'cewek viral 2026','model indonesia terbaru','nonton film semi',
@@ -4263,10 +4645,11 @@ class IndexingHammer {
     } catch {}
   }
 
+  // ── Ping saat konten pertama kali diakses — pastikan search engine tahu ────
   async pingOnFirstView(itemUrl, itemId) {
     try {
       const memKey = 'pingview:' + itemId;
-      if (_pingCache.get(memKey)) return;
+      if (_pingCache.get(memKey)) return; // sudah pernah di-ping
       _pingCache.set(memKey, 1);
       await this._pingIndexNow([itemUrl]);
     } catch {}
@@ -4275,6 +4658,7 @@ class IndexingHammer {
   async scheduledPing() {
     try {
       const allKwUrls = this.cannibal.getAllUrls();
+      // Batch 50 URL per ping, delay 500ms antar batch — hindari rate limit
       for (let i=0; i<allKwUrls.length; i+=50) {
         await this._pingIndexNow(allKwUrls.slice(i, i+50));
         if (i+50 < allKwUrls.length) await new Promise(r=>setTimeout(r,500));
@@ -4282,9 +4666,10 @@ class IndexingHammer {
     } catch {}
   }
 
+  // ── Bulk ping dengan auto-chunking — IndexNow max 10.000 URL per request ───
   async _pingBulk(urls) {
     const deduped = [...new Set(urls)];
-    const CHUNK = 50;
+    const CHUNK = 50; // aman untuk semua endpoint
     for (let i=0; i<deduped.length; i+=CHUNK) {
       await this._pingIndexNow(deduped.slice(i, i+CHUNK));
       if (i+CHUNK < deduped.length) await new Promise(r=>setTimeout(r,300));
@@ -4306,6 +4691,7 @@ class IndexingHammer {
       }).catch(err => logError('IndexNow.ping', err))
     );
 
+    // Google belum support IndexNow — pakai ping sitemap URL sebagai fallback
     if (urls.length <= 3) {
       const gPing = urls.map(u =>
         fetch(`https://www.google.com/ping?sitemap=${encodeURIComponent('https://'+host+'/sitemap.xml')}`, {
@@ -4319,6 +4705,7 @@ class IndexingHammer {
   }
 
   generateKeyFile() {
+    // Must match the key generated in _pingIndexNow
     const secret = this.cfg.DAPUR_API_KEY || this.env.INDEXNOW_SECRET || this.cfg.WARUNG_DOMAIN;
     const key = hexHash(this.cfg.WARUNG_DOMAIN + ':' + secret, 16);
     return new Response(key, { headers:{'Content-Type':'text/plain','Cache-Control':'public, max-age=3600'} });
@@ -4403,10 +4790,15 @@ function _buildAmplificationHTML(intent, query, cfg) {
         + ` untuk akses penuh.</p>`
         + `</div>`;
     default:
+
       return '';
   }
 }
 
+// ── Search Intent Hijack v2 — mutasi konten on-the-fly per keyword referrer ──
+// Sopo teko soko Google ngetik "download X" → halaman langsung nampilno CTA download
+// Sopo teko ngetik "cara X" → muncul panduan, bukan sekedar video
+// Kompetitor isi konten statis, awakdewe dinamis per visitor, per keyword
 function amplifyIntent(html, request, cfg) {
   if (cfg.INTENT_AMPLIFIER_ENABLED !== true) return html;
   const referrer = request.headers.get('Referer') || '';
@@ -4418,16 +4810,20 @@ function amplifyIntent(html, request, cfg) {
   const encQ    = encodeURIComponent(query);
   const sPath   = '/' + (cfg.PATH_SEARCH || 'search');
 
+  // ① Inject keyword ke <title> — matching lebih kuat di SERP snippet
+  //    "Judul Konten | Warung" → "query - Judul Konten | Warung"
   html = html.replace(
     /(<title>)([^<]{1,120})(<\/title>)/,
     (_, open, title, close) => `${open}${sq} - ${title}${close}`
   );
 
+  // ② Inject keyword ke meta description — snippet SERP lebih relevan
   html = html.replace(
     /(<meta name="description" content=")([^"]{0,200})(")/,
     (_, pre, desc, post) => `${pre}${sq}: ${desc.slice(0, 140)}${post}`
   );
 
+  // ③ Above-fold intent banner — langsung keliatan tanpa scroll
   const intentBanner = (() => {
     switch (intent) {
       case 'transactional':
@@ -4457,6 +4853,7 @@ function amplifyIntent(html, request, cfg) {
     }
   })();
 
+  // ④ Related search strip di bawah konten — dorong user explore lebih dalam
   const relatedTerms = [
     query + ' terbaru', query + ' gratis', query + ' hd',
     query + ' terlengkap', 'nonton ' + query, query + ' online',
@@ -4466,7 +4863,9 @@ function amplifyIntent(html, request, cfg) {
     + relatedTerms.map(t => `<a href="${sPath}?q=${encodeURIComponent(t)}" style="display:inline-block;margin:2px 4px;padding:2px 10px;border:1px solid var(--border2);border-radius:99px;color:var(--text-dim);text-decoration:none">${h(t)}</a>`).join('')
     + `</div>`;
 
+  // Inject banner tepat setelah <main (above fold)
   html = html.replace(/(<main[^>]*>)/, `$1\n${intentBanner}`);
+  // Inject related strip sebelum </main>
   html = html.replace(/<\/main>/, `${relatedStrip}\n</main>`);
 
   return html;
@@ -4489,12 +4888,12 @@ class Alchemist {
     this.cfg  = cfg;
     this.domain = cfg.WARUNG_DOMAIN;
 
-    this.index       = null;
-    this.networkIndex= null;
+    this.index       = null; // index domain sendiri
+    this.networkIndex= null; // index gabungan semua sister domains
     this.ts          = 0;
     this.networkTs   = 0;
     this.TTL         = 600000;
-    this.NETWORK_TTL = 1800000;
+    this.NETWORK_TTL = 1800000; // network refresh lebih jarang — 30 menit
   }
 
   static get(cfg) {
@@ -4506,10 +4905,12 @@ class Alchemist {
     return inst;
   }
 
+  // ── Build index dari list item — support prefix domain untuk network mode ──
   _buildIndex(items, domainPrefix='') {
     const map = new Map();
     for (const item of items) {
       if (!item?.title) continue;
+      // Network mode: URL pakai full https://domain/path
       const url = domainPrefix
         ? 'https://' + domainPrefix + itemUrl(item, this.cfg)
         : itemUrl(item, this.cfg);
@@ -4522,6 +4923,7 @@ class Alchemist {
         let arr = map.get(word);
         if (!arr) { arr = []; map.set(word, arr); }
         if (!arr.some(e => e.url === url)) {
+          // Tandai apakah link ini cross-domain
           arr.push({ title: item.title, url, external: !!domainPrefix });
         }
       }
@@ -4529,6 +4931,7 @@ class Alchemist {
     return map;
   }
 
+  // ── Merge beberapa index Map jadi satu ────────────────────────────────────
   _mergeIndexes(maps) {
     const merged = new Map();
     for (const map of maps) {
@@ -4562,6 +4965,7 @@ class Alchemist {
     }
   }
 
+  // ── Network Mode: fetch trending dari setiap sister domain via Dapur API ──
   async refreshNetwork(client) {
     const rawDomains = this.cfg.ALCHEMIST_NETWORK_DOMAINS || '';
     if (!rawDomains) return;
@@ -4569,6 +4973,8 @@ class Alchemist {
     if (!sisterDomains.length) return;
 
     try {
+      // Fetch trending dari masing-masing sister domain secara parallel
+      // Pakai Dapur API dengan domain override — hemat resource
       const networkMaps = await Promise.all(
         sisterDomains.map(async (sd) => {
           try {
@@ -4576,11 +4982,13 @@ class Alchemist {
             const apiKey    = this.cfg.DAPUR_API_KEY || '';
             const resp = await fetch(`${dapurBase}/api/v1/trending?per_page=20`, {
               headers: {
+                // FIX: gunakan X-API-Key konsisten dengan DapurClient._fetchAndStore()
+                // Authorization: Bearer juga diterima middleware tapi tidak perlu
                 'X-API-Key':  apiKey,
                 'Origin':     `https://${sd}`,
                 'User-Agent': 'PujaseraNetwork/2.0',
               },
-              cf: { cacheTtl: 1800 },
+              cf: { cacheTtl: 1800 }, // cache 30 menit di CF edge
             });
             if (!resp.ok) return new Map();
             const data = await resp.json();
@@ -4590,6 +4998,7 @@ class Alchemist {
         })
       );
 
+      // Merge: index sendiri + semua sister domains
       const allMaps = [this.index || new Map(), ...networkMaps.filter(m => m.size > 0)];
       this.networkIndex = this._mergeIndexes(allMaps);
       this.networkTs    = Date.now();
@@ -4602,6 +5011,7 @@ class Alchemist {
   async ensureIndex(client, waitUntilFn) {
     const age = Date.now() - this.ts;
     if (this.index && age < this.TTL) {
+      // Index lokal fresh — cek juga network index
       const networkAge = Date.now() - this.networkTs;
       const hasNetwork = !!(this.cfg.ALCHEMIST_NETWORK_DOMAINS);
       if (hasNetwork && (!this.networkIndex || networkAge >= this.NETWORK_TTL) && waitUntilFn) {
@@ -4614,33 +5024,39 @@ class Alchemist {
       return;
     }
     await this.refresh(client);
+    // Langsung refresh network juga kalau pertama kali
     if (this.cfg.ALCHEMIST_NETWORK_DOMAINS && waitUntilFn) {
       waitUntilFn(this.refreshNetwork(client).catch(() => {}));
     }
   }
 
+  // ── Hasilkan anchor text variatif dari judul — bukan hanya full title ─────
   _anchorVariants(title, word, seed) {
+    // Ambil potongan judul yang mengandung kata kunci (max 5 kata)
     const words = title.split(/\s+/);
     const idx   = words.findIndex(w => w.toLowerCase().includes(word));
     const start = Math.max(0, idx - 1);
     const snippet = words.slice(start, start + 5).join(' ');
     const variants = [
-      title,
-      snippet || title,
-      ucfirst(word),
-      'Nonton ' + ucfirst(word),
-      ucfirst(word) + ' terbaru',
-      'Video ' + ucfirst(word),
+      title,                          // full title
+      snippet || title,               // snippet 5 kata
+      ucfirst(word),                  // kata kunci saja
+      'Nonton ' + ucfirst(word),      // prefix nonton
+      ucfirst(word) + ' terbaru',     // suffix terbaru
+      'Video ' + ucfirst(word),       // prefix video
     ];
     return variants[seed % variants.length];
   }
 
+  // ── Hitung skor relevansi kandidat terhadap teks halaman ──────────────────
   _scoreCandidate(word, entries, lowerText, domain, seed) {
+    // Bonus: kata muncul lebih dari sekali → lebih relevan
     const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const rx      = new RegExp('\\b' + escaped + '\\b', 'gi');
     const matches = (lowerText.match(rx) || []).length;
-    const freqScore = Math.min(matches, 5);
+    const freqScore = Math.min(matches, 5); // cap 5
 
+    // Bonus: judul lebih pendek → anchor lebih natural
     const entry = entries[seed % entries.length];
     const lenScore = entry ? Math.max(0, 5 - Math.floor(entry.title.length / 20)) : 0;
 
@@ -4648,6 +5064,8 @@ class Alchemist {
   }
 
   generateInternalLinks(text, currentItemId, maxLinks, domain) {
+    // Gunakan networkIndex kalau ada (gabungan semua sister domain)
+    // Fallback ke index lokal
     const activeIndex = this.networkIndex || this.index;
     if (!activeIndex || !text) return '';
     maxLinks = maxLinks || 3;
@@ -4665,6 +5083,7 @@ class Alchemist {
       const entry = entries[seed % entries.length];
       if (!entry?.url) continue;
 
+      // Jangan link ke halaman yang sedang dibuka
       if (!entry.external && (
         entry.url.includes('/' + currentItemId + '/') ||
         entry.url.endsWith('/' + currentItemId)
@@ -4673,6 +5092,7 @@ class Alchemist {
       if (usedUrls.has(entry.url)) continue;
 
       const score = this._scoreCandidate(word, entries, lowerText, domain, seed)
+        // Slight penalty untuk cross-domain — prioritaskan internal dulu
         - (entry.external ? 1 : 0);
       candidates.push({ word, entry, score, seed });
     }
@@ -4695,6 +5115,7 @@ class Alchemist {
     const links = chosen.map(c => {
       const anchorSeed = hashSeed(domain + ':anchor:' + c.word + ':' + currentItemId);
       const anchorText = this._anchorVariants(c.entry.title, c.word, anchorSeed);
+      // Cross-domain link: tambah rel="noopener" + target="_blank"
       const extAttrs = c.entry.external
         ? ` target="_blank" rel="noopener noreferrer" data-network="1"`
         : '';
