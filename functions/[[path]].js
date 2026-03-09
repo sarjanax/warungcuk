@@ -26,6 +26,11 @@
  *  ADS_AFTER_CONTENT_MOBILE  Kode iklan after content MOBILE
  *  ADS_FOOTER_TOP_DESKTOP    Kode iklan footer top DESKTOP
  *  ADS_FOOTER_TOP_MOBILE     Kode iklan footer top MOBILE
+ *  ANALYTICS_GOOGLE_ID        Google Analytics Measurement ID (G-XXXXXXX)
+ *  ANALYTICS_YANDEX_ID        Yandex Metrica ID (XXXXXXXX)
+ *  SEARCH_CONSOLE_GOOGLE      Google Search Console verification code
+ *  SEARCH_CONSOLE_YANDEX      Yandex Webmaster verification code
+ *  SEARCH_CONSOLE_BING        Bing Webmaster verification code
  * ═════════════════════════════════════════════════════════════
  */
 
@@ -230,7 +235,7 @@ function getConfig(env, request) {
   const basePath = new URL(baseUrl).pathname.replace(/\/$/, '');
   const cfg = {
     DAPUR_BASE_URL:   (env.DAPUR_BASE_URL || 'https://dapur.dukunseo.com').replace(/\/$/, ''),
-    DAPUR_API_KEY:     env.DAPUR_API_KEY  || '',
+    DAPUR_API_KEY:     env.DAPUR_API_KEY  || '', // Format baru: usr{uid}_sk_live_{48hex}
     DAPUR_CACHE_TTL:   300,
     DAPUR_DEBUG:       false,
     WARUNG_NAME:       name,
@@ -287,6 +292,13 @@ function getConfig(env, request) {
     ADS_AFTER_CONTENT_MOBILE: env.ADS_AFTER_CONTENT_MOBILE || '',
     ADS_FOOTER_TOP_DESKTOP: env.ADS_FOOTER_TOP_DESKTOP || '',
     ADS_FOOTER_TOP_MOBILE: env.ADS_FOOTER_TOP_MOBILE || '',
+    
+    // Analytics & Search Console
+    ANALYTICS_GOOGLE_ID:      env.ANALYTICS_GOOGLE_ID || '',
+    ANALYTICS_YANDEX_ID:      env.ANALYTICS_YANDEX_ID || '',
+    SEARCH_CONSOLE_GOOGLE:    env.SEARCH_CONSOLE_GOOGLE || '',
+    SEARCH_CONSOLE_YANDEX:    env.SEARCH_CONSOLE_YANDEX || '',
+    SEARCH_CONSOLE_BING:      env.SEARCH_CONSOLE_BING || '',
     
     CONTACT_EMAIL:         env.CONTACT_EMAIL      || ('admin@' + domain),
     CONTACT_EMAIL_NAME:    env.CONTACT_EMAIL_NAME || (name + ' Admin'),
@@ -729,6 +741,10 @@ function getMoonPhase() {
 // SECTION 13 — DAPUR CLIENT
 // ═══════════════════════════════════════════════════════════════════════
 
+// ── API Key format validator (model baru: usr{uid}_sk_live_{48hex}) ──────────
+const _NEW_KEY_RX = /^usr\d+_sk_live_[a-f0-9]{48}$/;
+const _OLD_KEY_RX = /^wrg\d+_sk_live_[a-f0-9]{48}$/;
+
 class DapurClient {
   constructor(cfg, env, ctx=null) {
     this.baseUrl       = cfg.DAPUR_BASE_URL+'/api/v1';
@@ -740,12 +756,24 @@ class DapurClient {
     this.domain        = cfg.WARUNG_DOMAIN;
     this.baseUrlSite   = cfg.WARUNG_BASE_URL;
     this.cachePrefix   = hexHash(this.apiKey, 8);
+
+    // Validasi format API key — model lama (wrg...) sudah tidak didukung server
+    if (!this.apiKey) {
+      console.error('[DapurClient] DAPUR_API_KEY tidak di-set. Format baru: usr{uid}_sk_live_{48hex}');
+    } else if (_OLD_KEY_RX.test(this.apiKey)) {
+      console.error('[DapurClient] DAPUR_API_KEY model lama (wrg...) ditolak server. Generate ulang key model baru (usr...) via panel Dapur.');
+    } else if (!_NEW_KEY_RX.test(this.apiKey)) {
+      console.warn('[DapurClient] Format DAPUR_API_KEY tidak dikenali. Pastikan format: usr{uid}_sk_live_{48hex}');
+    }
   }
 
   getMediaList(params={})  { return this._fetch('/media', params); }
-  getLongest(limit=24,page=1) { return this._fetch('/media', {sort:'longest',type:'video',per_page:limit,page}); }
+  getLongest(limit=24, minDuration=60) { return this._fetch('/longest', {limit, min_duration:minDuration}); }
   getMediaDetail(id)       { if (!id||id<1) return this._emptyResponse(); return this._fetch('/media/'+id,{}); }
-  getTrending(limit=20,type='') { const p={limit}; if(type) p.type=type; return this._fetch('/trending',p); }
+  getTrending(limit=20, type='', period='week') { const p={limit}; if(type) p.type=type; if(period&&period!=='week') p.period=period; return this._fetch('/trending',p); }
+  getMostLiked(limit=20, type='', minLikes=10) { const p={limit,min_likes:minLikes}; if(type) p.type=type; return this._fetch('/most-liked',p); }
+  getMostViewed(limit=20, type='', period='all') { const p={limit}; if(type) p.type=type; if(period&&period!=='all') p.period=period; return this._fetch('/most-viewed',p); }
+  getPopular(limit=20, type='') { const p={limit}; if(type) p.type=type; return this._fetch('/popular',p); }
   search(query,params={})  { if (!query||query.trim().length<2) return {data:[],meta:{}}; return this._fetch('/search',{q:query,...params}); }
   async getByTag(tag,params={}) {
     tag=(tag||'').trim(); if (!tag) return this._emptyResponse();
@@ -837,7 +865,7 @@ class DapurClient {
 
   async _fetch(path, params={}, useCache=true) {
     const url = this.baseUrl+path;
-    const ALLOWED = ['page','limit','type','q','search_in','sort','order','per_page'];
+    const ALLOWED = ['page','limit','type','q','search_in','sort','order','per_page','min_duration','min_likes','period'];
     const safeParams = {};
     for (const k of ALLOWED) { if (k in params) safeParams[k]=String(params[k]).slice(0,200); }
     const qs = Object.keys(safeParams).length ? '?'+new URLSearchParams(safeParams).toString() : '';
@@ -1283,6 +1311,73 @@ class SeoHelper {
     const schema={ '@context':'https://schema.org','@type':'FAQPage','mainEntity':faqs.map(faq=>({'@type':'Question','name':faq.q,'acceptedAnswer':{'@type':'Answer','text':faq.a}})) };
     return `<script type="application/ld+json" nonce="${generateNonce()}">${JSON.stringify(schema,null,0)}</script>`;
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SECTION 14.5 — ANALYTICS & VERIFICATION SCRIPTS
+// ═══════════════════════════════════════════════════════════════════════
+
+function renderAnalytics(cfg, nonce) {
+  let html = '';
+  
+  // Google Analytics 4
+  if (cfg.ANALYTICS_GOOGLE_ID) {
+    html += `
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=${h(cfg.ANALYTICS_GOOGLE_ID)}" nonce="${nonce}"></script>
+<script nonce="${nonce}">
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${h(cfg.ANALYTICS_GOOGLE_ID)}', {
+  send_page_view: true,
+  cookie_flags: 'SameSite=None;Secure'
+});
+</script>`;
+  }
+
+  // Yandex Metrica
+  if (cfg.ANALYTICS_YANDEX_ID) {
+    html += `
+<!-- Yandex.Metrika counter -->
+<script nonce="${nonce}" type="text/javascript">
+(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+m[i].l=1*new Date();
+for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+(window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+ym(${parseInt(cfg.ANALYTICS_YANDEX_ID)}, "init", {
+  clickmap:true,
+  trackLinks:true,
+  accurateTrackBounce:true,
+  webvisor:true
+});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/${parseInt(cfg.ANALYTICS_YANDEX_ID)}" style="position:absolute; left:-9999px;" alt="" /></div></noscript>`;
+  }
+
+  return html;
+}
+
+function renderVerificationMeta(cfg) {
+  let metas = '';
+  
+  // Google Search Console (meta verification)
+  if (cfg.SEARCH_CONSOLE_GOOGLE && !cfg.SEARCH_CONSOLE_GOOGLE.startsWith('google-')) {
+    metas += `<meta name="google-site-verification" content="${h(cfg.SEARCH_CONSOLE_GOOGLE)}" />\n`;
+  }
+  
+  // Yandex Webmaster
+  if (cfg.SEARCH_CONSOLE_YANDEX) {
+    metas += `<meta name="yandex-verification" content="${h(cfg.SEARCH_CONSOLE_YANDEX)}" />\n`;
+  }
+  
+  // Bing Webmaster
+  if (cfg.SEARCH_CONSOLE_BING) {
+    metas += `<meta name="msvalidate.01" content="${h(cfg.SEARCH_CONSOLE_BING)}" />\n`;
+  }
+  
+  return metas;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1909,6 +2004,17 @@ body {
 function renderHead({ title, desc, canonical, ogImage, ogType, keywords, noindex, contentId=0, contentType='meta', extraHead='', cfg, seo, request, prevUrl=null, nextUrl=null, publishedTime='', modifiedTime='', isPagePaginated=false, deliveryMode=null, extraNonces=[] }) {
   const nonce = generateNonce();
   const meta  = seo.renderMeta({ title, desc, canonical, ogImage, ogType, keywords, noindex, contentId, contentType, publishedTime, modifiedTime, isPagePaginated, nonce });
+  
+  // Tambahkan verification meta tags
+  const verificationMeta = renderVerificationMeta(cfg);
+  
+  // Gabungkan extraNonces dengan nonce utama
+  const allNonces = [nonce, ...extraNonces];
+  const nonceAttr = allNonces.map(n => `'nonce-${n}'`).join(' ');
+  
+  // Tambahkan analytics scripts (pake nonce pertama)
+  const analyticsScripts = renderAnalytics(cfg, nonce);
+  
   const lcpPreload = ogImage ? `<link rel="preload" as="image" href="${h(ogImage)}" fetchpriority="high">` : '';
   const prevLink   = prevUrl ? `<link rel="prev" href="${h(prevUrl)}">` : '';
   const nextLink   = nextUrl ? `<link rel="next" href="${h(nextUrl)}">` : '';
@@ -1924,16 +2030,16 @@ function renderHead({ title, desc, canonical, ogImage, ogType, keywords, noindex
 
   const dapurDomain = (cfg._env?.DAPUR_BASE_URL||'https://dapur.dukunseo.com').replace(/https?:\/\//,'').split('/')[0];
   
-  // CSP yang diperbarui dengan domain juicyads lengkap
+  // CSP yang diperbarui dengan domain juicyads dan analytics
   const csp = [
     `default-src 'self' https://${cfg.WARUNG_DOMAIN}`,
-    `script-src 'self' 'nonce-${nonce}'${extraNonces.map(n=>` 'nonce-${n}'`).join('')} https://*.magsrv.com https://a.magsrv.com https://*.juicyads.com https://*.juicyadserve.com https://*.juicyadserver.com https://ads.juicyads.com https://www.juicyads.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://cdnjs.cloudflare.com https://fonts.googleapis.com`,
+    `script-src 'self' ${nonceAttr} https://*.magsrv.com https://a.magsrv.com https://*.juicyads.com https://*.juicyadserve.com https://*.juicyadserver.com https://ads.juicyads.com https://www.juicyads.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://cdnjs.cloudflare.com https://fonts.googleapis.com https://www.googletagmanager.com https://mc.yandex.ru`,
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com`,
     `font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com`,
-    `img-src 'self' data: blob: https:`,
+    `img-src 'self' data: blob: https: https://mc.yandex.ru`,
     `media-src 'self' blob: https:`,
     `frame-src 'self' https://*.magsrv.com https://${dapurDomain} https://${cfg.WARUNG_DOMAIN} https://googleads.g.doubleclick.net https://*.juicyads.com https://*.juicyadserve.com https://*.juicyadserver.com https://ads.juicyads.com`,
-    `connect-src 'self' https://${cfg.WARUNG_DOMAIN} https://${dapurDomain} https://*.magsrv.com https://*.juicyads.com https://*.juicyadserve.com https://*.juicyadserver.com https://pagead2.googlesyndication.com`,
+    `connect-src 'self' https://${cfg.WARUNG_DOMAIN} https://${dapurDomain} https://*.magsrv.com https://*.juicyads.com https://*.juicyadserve.com https://*.juicyadserver.com https://pagead2.googlesyndication.com https://www.google-analytics.com https://analytics.google.com`,
     `object-src 'none'`,`base-uri 'self'`,`form-action 'self'`,`upgrade-insecure-requests`,
   ].join('; ');
 
@@ -1946,6 +2052,7 @@ function renderHead({ title, desc, canonical, ogImage, ogType, keywords, noindex
 <meta name="theme-color" content="${h(themeColor)}">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+${verificationMeta}
 ${meta}
 ${lcpPreload}${prevLink}${nextLink}
 <link rel="dns-prefetch" href="https://fonts.googleapis.com">
@@ -1953,11 +2060,14 @@ ${lcpPreload}${prevLink}${nextLink}
 <link rel="dns-prefetch" href="https://a.magsrv.com">
 <link rel="dns-prefetch" href="https://ads.juicyads.com">
 <link rel="dns-prefetch" href="https://www.juicyads.com">
-<link rel="dns-prefetch" href="${h(cfg.DAPUR_BASE_URL||'https://dapur.dukunseo.com')}">
+<link rel="dns-prefetch" href="https://www.googletagmanager.com">
+<link rel="dns-prefetch" href="https://mc.yandex.ru">
 <link rel="preconnect" href="https://a.magsrv.com" crossorigin>
 <link rel="preconnect" href="https://ads.juicyads.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+<link rel="preconnect" href="https://mc.yandex.ru" crossorigin>
 ${criticalCss}
 ${cfg.THEME_FONT && cfg.THEME_FONT!=='Inter' && !cfg.THEME_FONT.includes('system') ? `<link rel="preload" href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(cfg.THEME_FONT)}:wght@400;600;700;800;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(cfg.THEME_FONT)}:wght@400;600;700;800;900&display=swap"></noscript>` : ''}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -1966,6 +2076,7 @@ ${cfg.THEME_FONT && cfg.THEME_FONT!=='Inter' && !cfg.THEME_FONT.includes('system
 <link rel="manifest" href="${urlHelper('assets/site.webmanifest',cfg)}">
 <meta http-equiv="Content-Security-Policy" content="${h(csp)}">
 ${adsenseScript(cfg)}${bannerStyles()}
+${analyticsScripts}
 <script type="application/ld+json" nonce="${nonce}">${webpageSchema}</script>
 ${extraHead}
 </head>`;
